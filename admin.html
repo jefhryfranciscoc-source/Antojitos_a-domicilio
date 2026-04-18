@@ -143,15 +143,23 @@
             cont.innerHTML = "";
             snap.forEach(doc => {
                 const p = doc.data();
+                
+                // Corrección de campos para evitar 'undefined'
+                const cliente = p.cliente || "Sin nombre";
+                const monto = p.total || p.total_comida || "0";
+                const productos = Array.isArray(p.pedido) ? p.pedido.join(", ") : (p.pedido || "Sin productos");
+                const direccion = p.ubicacion || "Sin dirección";
+                const motorizado = p.repartidorNombre || p.repartidorId || 'Pendiente...';
+
                 cont.innerHTML += `
-                    <div class="card pedido-card ${p.estado}">
+                    <div class="card pedido-card ${p.estado || 'NUEVO'}">
                         <div style="display:flex; justify-content:space-between;">
-                            <b>👤 ${p.cliente}</b>
-                            <span style="color:var(--verde); font-weight:bold;">C$ ${p.total}</span>
+                            <b>👤 ${cliente}</b>
+                            <span style="color:var(--verde); font-weight:bold;">C$ ${monto}</span>
                         </div>
-                        <div style="font-size:0.85em; margin:5px 0;">📦 ${p.pedido.join(", ")}</div>
-                        <div style="font-size:0.8em; color:gray;">📍 ${p.ubicacion}</div>
-                        <div style="font-size:0.8em; margin-top:5px;">🛵 Repartidor: <b style="color:var(--naranja)">${p.repartidorNombre || 'Pendiente...'}</b></div>
+                        <div style="font-size:0.85em; margin:5px 0;">📦 ${productos}</div>
+                        <div style="font-size:0.8em; color:gray;">📍 ${direccion}</div>
+                        <div style="font-size:0.8em; margin-top:5px;">🛵 Repartidor: <b style="color:var(--naranja)">${motorizado}</b></div>
                         <div style="margin-top:10px; display:flex; gap:10px;">
                             <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar Orden</button>
                         </div>
@@ -173,7 +181,7 @@
                             <small>C$ ${m.precio} | ${m.distribuidor}</small>
                         </div>
                         <div>
-                            <button onclick="gestionarPlato('${doc.id}','${m.nombre}',${m.precio},'${m.distribuidor}',${m.latitud},${m.longitud})">📝</button>
+                            <button onclick="gestionarPlato('${doc.id}','${m.nombre}',${m.precio},'${m.distribuidor}')">📝</button>
                             <button onclick="eliminarPlato('${doc.id}')">🗑️</button>
                         </div>
                     </div>`;
@@ -182,13 +190,11 @@
     }
 
     function escucharRepartidores() {
-        // CORRECCIÓN: Buscamos cualquier usuario que no sea cliente para gestionar el equipo
         db.collection("usuarios").where("rol", "in", ["REPARTIDOR", "POSTULANTE"]).onSnapshot(snap => {
             const cont = document.getElementById('listaRepartidores');
             cont.innerHTML = "";
             snap.forEach(doc => {
                 const u = doc.data();
-                // Validamos nombre para evitar el undefined
                 const nombreMostrar = u.nombre || u.usuario || "Sin Nombre";
                 const esActivo = u.rol === "REPARTIDOR" && u.aprobado === true;
 
@@ -196,8 +202,7 @@
                     <div class="card" style="display:flex; justify-content:space-between; align-items:center; border-left: 5px solid ${esActivo ? 'var(--verde)' : 'var(--azul)'}">
                         <div>
                             <b>${nombreMostrar}</b><br>
-                            <small>📞 ${u.telefono || 'Sin tel'}</small><br>
-                            <small style="color:gray;">Estado: ${u.estado_reparto || '---'}</small>
+                            <small>📞 ${u.telefono || 'Sin tel'}</small>
                         </div>
                         <div style="display:flex; flex-direction:column; gap:5px;">
                             ${!esActivo ? 
@@ -211,20 +216,16 @@
         });
     }
 
-    async function gestionarPlato(id=null, n='', p='', d='Antojitos', lat='', lng='') {
+    async function gestionarPlato(id=null, n='', p='', d='Antojitos') {
         const nom = prompt("Nombre del producto:", n);
         const pre = prompt("Precio (C$):", p);
         const dis = prompt("Local que lo vende:", d);
-        const latLocal = prompt("Latitud GPS del Local:", lat || "13.486");
-        const lngLocal = prompt("Longitud GPS del Local:", lng || "-86.481");
 
         if(nom && pre) {
             const data = { 
                 nombre: nom.toLowerCase(), 
                 precio: parseFloat(pre), 
-                distribuidor: dis,
-                latitud: parseFloat(latLocal), 
-                longitud: parseFloat(lngLocal),
+                distribuidor: dis || "Antojitos",
                 disponible: true 
             };
             if(id) await db.collection("menu").doc(id).update(data);
@@ -233,24 +234,22 @@
     }
 
     async function aprobarRepartidor(id) {
-        if(confirm("¿Quieres activar a este repartidor? Podrá ver y aceptar pedidos de inmediato.")) {
-            try {
-                await db.collection("usuarios").doc(id).update({ 
-                    rol: "REPARTIDOR",
-                    aprobado: true,
-                    estado_reparto: "DISPONIBLE"
-                });
-                alert("¡Repartidor activado!");
-            } catch(e) { alert("Error al aprobar."); }
+        if(confirm("¿Quieres activar a este repartidor?")) {
+            await db.collection("usuarios").doc(id).update({ 
+                rol: "REPARTIDOR", 
+                aprobado: true,
+                estado_reparto: "DISPONIBLE"
+            });
+            alert("¡Repartidor activado!");
         }
     }
 
     async function eliminarPedido(id) { if(confirm("¿Borrar orden?")) await db.collection("pedidos").doc(id).delete(); }
     async function eliminarPlato(id) { if(confirm("¿Borrar del menú?")) await db.collection("menu").doc(id).delete(); }
-    async function eliminarUsuario(id) { if(confirm("¿Eliminar este usuario del sistema?")) await db.collection("usuarios").doc(id).delete(); }
+    async function eliminarUsuario(id) { if(confirm("¿Eliminar usuario?")) await db.collection("usuarios").doc(id).delete(); }
 
     async function limpiarEntregados() {
-        if(confirm("Se borrarán todas las órdenes ENTREGADAS. ¿Continuar?")) {
+        if(confirm("Se borrarán las órdenes ENTREGADAS. ¿Continuar?")) {
             const snap = await db.collection("pedidos").where("estado","==","ENTREGADO").get();
             snap.forEach(doc => doc.ref.delete());
         }
@@ -265,4 +264,3 @@
 </script>
 </body>
 </html>
-
