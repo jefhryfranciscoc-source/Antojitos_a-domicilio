@@ -12,11 +12,12 @@
         .hidden { display: none !important; }
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
         
-        /* Estilos Menú tipo Cliente */
-        .grupo-distribuidor { margin-bottom: 15px; border: 1px solid #eee; border-radius: 15px; overflow: hidden; background: white; }
-        .titulo-distribuidor { background: var(--oscuro); color: white; padding: 8px 12px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; }
-        .menu-rep-item { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 0.9em; }
+        input[type="text"], input[type="tel"] { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
         
+        /* Estilo para el Checkbox de términos */
+        .terminos-box { display: flex; align-items: flex-start; gap: 10px; margin: 15px 0; font-size: 0.85em; color: #555; text-align: left; }
+        .terminos-box input { margin-top: 3px; transform: scale(1.2); }
+
         .pedido-card { background: white; border-left: 5px solid var(--naranja); padding: 15px; border-radius: 15px; margin-bottom: 15px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); position: relative; }
         .pedido-activo { border-left-color: var(--verde); background: #f0fff4; }
         .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; color: white; cursor: pointer; transition: 0.3s; text-align: center; display: block; text-decoration: none; margin-top: 10px; box-sizing: border-box;}
@@ -30,8 +31,25 @@
 </head>
 <body>
 
+    <div id="pantallaRegistro" class="hidden card">
+        <h2 style="text-align:center; color:var(--oscuro);">Registro de Repartidor</h2>
+        <p style="font-size:0.9em; color:gray; text-align: center;">Únete al equipo de Antojitos Pueblo Nuevo</p>
+        
+        <input type="text" id="regNombre" placeholder="Tu nombre completo">
+        <input type="tel" id="regTelefono" placeholder="Número de celular (WhatsApp)">
+        
+        <div class="terminos-box">
+            <input type="checkbox" id="checkComision">
+            <label for="checkComision">
+                Acepto compartir el <b><span class="val-comision-text">15</span>%</b> de comisión administrativa solicitada por el administrador por cada pedido realizado.
+            </label>
+        </div>
+
+        <button class="btn btn-acc" onclick="registrarTrabajador()">ENVIAR SOLICITUD</button>
+    </div>
+
     <div id="pantallaPrincipal" class="hidden">
-        <div class="comision-box">📢 Comisión Administrativa: <b class="val-comision">--</b>%</div>
+        <div class="comision-box">📢 Tu comisión actual: <b id="val-comision">--</b>%</div>
         
         <button onclick="document.getElementById('visorMenu').classList.toggle('hidden')" class="btn" style="background: #e0e0e0; color: var(--oscuro); margin-bottom: 15px;">🍔 CONSULTAR MENÚ ACTUAL</button>
         <div id="visorMenu" class="hidden card">
@@ -59,29 +77,68 @@
     const db = firebase.firestore();
 
     let miId = localStorage.getItem("repartidor_id");
-    let miEstado = "DISPONIBLE"; // Estado local inicial
+    let miEstado = "DISPONIBLE";
     let miNombreUser = "";
-    let porcentajeComision = 15;
+    let porcentajeComisionGlobal = 15;
     let temporizadores = {};
     let pedidosRechazados = JSON.parse(localStorage.getItem("pedidos_rechazados") || "[]");
 
     window.onload = () => { 
+        escucharConfigGlobal(); // Cargar comisión antes de que alguien se registre
         verificarSesion();
-        escucharConfigGlobal();
         escucharMenuParaRepartidor();
     };
 
+    async function registrarTrabajador() {
+        const nombre = document.getElementById('regNombre').value;
+        const tel = document.getElementById('regTelefono').value;
+        const acepto = document.getElementById('checkComision').checked;
+
+        if(!nombre || !tel) return alert("Por favor, ingresa tu nombre y teléfono.");
+        if(!acepto) return alert("Debes aceptar el porcentaje de comisión para trabajar con nosotros.");
+
+        try {
+            const docRef = await db.collection("usuarios").add({
+                usuario: nombre,
+                telefono: tel,
+                rol: "REPARTIDOR",
+                aprobado: false, 
+                acepta_comision: true,
+                comision_pactada: porcentajeComisionGlobal,
+                estado_reparto: "DISPONIBLE",
+                fecha_registro: new Date()
+            });
+            localStorage.setItem("repartidor_id", docRef.id);
+            location.reload();
+        } catch(e) { alert("Error al enviar la solicitud."); }
+    }
+
     function verificarSesion() {
-        if (!miId) { location.reload(); return; } // Si no hay ID, debería ir a registro
+        if (!miId) {
+            document.getElementById('pantallaRegistro').classList.remove('hidden');
+            return;
+        }
         
         db.collection("usuarios").doc(miId).onSnapshot(doc => {
             if (doc.exists) {
                 const u = doc.data();
+                if(!u.aprobado) {
+                    document.getElementById('pantallaPrincipal').classList.remove('hidden');
+                    document.getElementById('listaPedidos').innerHTML = `
+                        <div class='card' style='text-align:center;'>
+                            <h3 style='color:var(--naranja)'>⏳ Solicitud Enviada</h3>
+                            <p>Hola <b>${u.usuario}</b>, tu cuenta está en espera de aprobación por el administrador.</p>
+                        </div>`;
+                    return;
+                }
                 miNombreUser = u.usuario;
-                miEstado = u.estado_reparto || "DISPONIBLE"; // Leemos si estamos LIBRES u OCUPADOS
+                miEstado = u.estado_reparto || "DISPONIBLE";
                 document.getElementById('userTag').innerText = `@${u.usuario} (${miEstado})`;
                 document.getElementById('pantallaPrincipal').classList.remove('hidden');
                 escucharPedidos();
+            } else {
+                localStorage.removeItem("repartidor_id");
+                location.reload();
             }
         });
     }
@@ -92,7 +149,6 @@
           .onSnapshot(snap => {
             let html = "";
             let container = document.getElementById('listaPedidos');
-            container.innerHTML = ""; 
 
             snap.forEach(doc => {
                 const p = doc.data();
@@ -100,25 +156,23 @@
 
                 if(pedidosRechazados.includes(idDoc)) return;
 
+                // CORRECCIÓN DEFINITIVA ENLACE MAPS
                 let linkMaps = p.geolocalizacion ? `<a href="https://www.google.com/maps/dir/?api=1&destination=${p.geolocalizacion.lat},${p.geolocalizacion.lng}&travelmode=driving" target="_blank" class="btn btn-maps">🗺️ VER RUTA EN MAPS</a>` : "";
 
-                // 1. SI EL PEDIDO ES MÍO (ESTÁ EN CAMINO)
                 if(p.repartidor_id === miId && p.estado === "EN CAMINO") {
-                    const comisionJef = Math.round(p.total * (porcentajeComision / 100));
                     html += `<div class="pedido-card pedido-activo">
-                        <span class="badge" style="background:var(--verde)">TIENES ESTA ORDEN</span><br><br>
+                        <span class="badge" style="background:var(--verde)">ORDEN EN CURSO</span><br><br>
                         <b>Cliente:</b> ${p.cliente}<br>📍 <b>Dir:</b> ${p.ubicacion}<br>
-                        <b style="color:var(--naranja); font-size:1.2em;">Total: C$ ${p.total}</b>
+                        <b style="color:var(--naranja); font-size:1.2em;">Monto a cobrar: C$ ${p.total}</b>
                         ${linkMaps} <hr>
                         <button class="btn btn-acc" onclick="finalizarPedido('${idDoc}')">ENTREGA FINALIZADA</button>
                     </div>`;
                 }
-                // 2. SI EL PEDIDO ES NUEVO Y YO ESTOY "DISPONIBLE"
                 else if(p.estado === "NUEVO" && miEstado === "DISPONIBLE") {
                     html += `<div class="pedido-card" id="card-${idDoc}">
                         <div class="timer-tag" id="timer-${idDoc}">1:30</div>
                         <b>👤 ${p.cliente}</b><br>📍 ${p.ubicacion}<br>
-                        <b style="color:var(--verde)">Monto: C$ ${p.total}</b><br>
+                        <b style="color:var(--verde)">Total Pedido: C$ ${p.total}</b><br>
                         ${linkMaps} 
                         <button class="btn btn-acc" onclick="aceptarPedido('${idDoc}')">ACEPTAR PEDIDO</button>
                         <button class="btn btn-rechazar" onclick="rechazarPedido('${idDoc}')">RECHAZAR</button>
@@ -133,19 +187,17 @@
 
     async function aceptarPedido(id) {
         try {
-            // Marcamos al repartidor como OCUPADO y asignamos el pedido
             await db.collection("usuarios").doc(miId).update({ estado_reparto: "OCUPADO" });
             await db.collection("pedidos").doc(id).update({ 
                 estado: "EN CAMINO", 
                 repartidor_id: miId, 
                 repartidorNombre: miNombreUser 
             });
-        } catch(e) { alert("Error al aceptar."); }
+        } catch(e) { console.error(e); }
     }
 
     async function finalizarPedido(id) {
-        if(confirm("¿Confirmas la entrega?")) {
-            // Marcamos pedido como entregado y al repartidor como DISPONIBLE
+        if(confirm("¿Confirmas que el pedido fue entregado y pagado?")) {
             await db.collection("pedidos").doc(id).update({ estado: "ENTREGADO" });
             await db.collection("usuarios").doc(miId).update({ estado_reparto: "DISPONIBLE" });
         }
@@ -156,12 +208,19 @@
             pedidosRechazados.push(id);
             localStorage.setItem("pedidos_rechazados", JSON.stringify(pedidosRechazados));
         }
-        escucharPedidos(); // Refrescar vista
+        escucharPedidos();
     }
 
-    // --- Funciones de apoyo (Menú, Config, Temporizador) ---
     function escucharConfigGlobal() {
-        db.collection("configuracion").doc("global").onSnapshot(doc => { if(doc.exists) porcentajeComision = doc.data().comision || 15; });
+        db.collection("configuracion").doc("global").onSnapshot(doc => { 
+            if(doc.exists) {
+                porcentajeComisionGlobal = doc.data().comision || 15;
+                document.getElementById('val-comision').innerText = porcentajeComisionGlobal;
+                // Actualizar texto en el registro también
+                const labelCom = document.querySelector('.val-comision-text');
+                if(labelCom) labelCom.innerText = porcentajeComisionGlobal;
+            }
+        });
     }
 
     function escucharMenuParaRepartidor() {
