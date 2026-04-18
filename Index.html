@@ -1,0 +1,262 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antojitos Pueblo Nuevo - Pedir</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+        :root { --naranja: #e67e22; --oscuro: #2c3e50; --blanco: #ffffff; --verde: #2ecc71; --azul: #3498db; --rojo: #e74c3c; --gris: #f0f2f5; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--gris); margin: 0; padding: 15px; }
+        .hidden { display: none !important; }
+        .card { background: white; padding: 10px 20px 25px 20px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        .horario-tag { display: block; text-align: center; font-size: 0.75em; padding: 5px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
+        .abierto { background: #e8f5e9; color: #2e7d32; }
+        .cerrado { background: #ffebee; color: #c62828; }
+        h2 { color: var(--naranja); text-align: center; margin-bottom: 5px; }
+        
+        .grupo-distribuidor { margin-top: 20px; border: 1px solid #eee; border-radius: 15px; overflow: hidden; }
+        .titulo-distribuidor { background: var(--oscuro); color: white; padding: 10px 15px; font-size: 0.9em; font-weight: bold; display: flex; align-items: center; gap: 8px; text-transform: uppercase; }
+        
+        .item-comida { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f0f0f0; gap: 12px; background: white; }
+        .item-comida:last-child { border-bottom: none; }
+        .info { flex: 1; }
+        .info b { display: block; color: var(--oscuro); font-size: 0.95em; }
+        .info span { color: var(--verde); font-weight: bold; font-size: 0.9em; }
+        .controles { display: flex; align-items: center; gap: 10px; }
+        .btn-mas { background: var(--gris); color: var(--naranja); border: none; width: 35px; height: 35px; border-radius: 10px; font-weight: bold; font-size: 1.2em; cursor: pointer; transition: 0.2s; }
+        .btn-mas:active { background: #ddd; transform: scale(0.95); }
+        
+        .resumen { background: #fff9f2; border: 1.5px dashed var(--naranja); padding: 20px; border-radius: 20px; margin-top: 20px; }
+        .resumen input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-family: inherit; }
+        .linea-detalle { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 5px; }
+        .total-final { display: flex; justify-content: space-between; font-size: 1.1em; color: var(--naranja); font-weight: bold; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+        .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 15px; display: block; transition: 0.3s; }
+        .btn-pedir:disabled { background: #ccc !important; cursor: not-allowed; opacity: 0.7; }
+        
+        #pantallaEstado { text-align: center; padding: 30px 10px; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--naranja); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .status-badge { display: inline-block; padding: 10px 25px; border-radius: 25px; font-weight: bold; margin-top: 15px; color: white; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="statusHorario" class="horario-tag">Cargando horario...</div>
+    <h2>Antojitos Pueblo Nuevo 🍔</h2>
+    
+    <div id="vistaPedido">
+        <div id="contenedorMenu">Cargando menú...</div>
+        
+        <div class="resumen">
+            <input type="text" id="nombreCli" placeholder="Tu nombre completo">
+            <input type="text" id="dirCli" placeholder="Dirección exacta o referencia clara">
+            
+            <div class="linea-detalle">
+                <span>Subtotal:</span> <b id="subTotal">C$ 0</b>
+            </div>
+            <div class="linea-detalle">
+                <span>Envío aproximado:</span> <b id="envioMonto">C$ 15</b>
+            </div>
+            
+            <div class="total-final">
+                <span>TOTAL:</span> <b id="granTotal">C$ 0</b>
+            </div>
+        </div>
+        <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()">🚀 ENVIAR PEDIDO</button>
+        <p id="msgSpam" class="hidden" style="color:var(--rojo); font-size:0.8em; text-align:center; font-weight:bold; margin-top:10px;">⚠️ Espera <span id="segundos">30</span>s para pedir de nuevo.</p>
+    </div>
+
+    <div id="pantallaEstado" class="hidden">
+        <div id="animacionEstado" class="loader"></div>
+        <h3 id="msgEstado">Procesando...</h3>
+        <p id="detalleEstado">Estamos conectando con el negocio.</p>
+        <div id="badgeEstado" class="status-badge" style="background:var(--azul);">NUEVO</div>
+        <br><br>
+        <button class="btn-pedir" style="background:var(--oscuro); font-size:0.8em;" onclick="volverAlMenu()">NUEVA ORDEN</button>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
+        authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
+        projectId: "antojitos-pueblo-nuevo", 
+        storageBucket: "antojitos-pueblo-nuevo.appspot.com", 
+        messagingSenderId: "1006413360329", 
+        appId: "1:1006413360329:web:99103e89833729cc2e3118" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    let carrito = {}; 
+    let configLogistica = { precio_minimo: 15, precio_km: 15, abierto: true, latitud: 13.379668, longitud: -86.480352 };
+    let envioCalculado = 15;
+    let coordsCliente = null;
+    
+    // CANDADO 1: Evita envíos duplicados en memoria
+    let enProcesoDeEnvio = false;
+
+    window.onload = () => {
+        document.getElementById('nombreCli').value = localStorage.getItem('antojitos_nombre') || "";
+        document.getElementById('dirCli').value = localStorage.getItem('antojitos_dir') || "";
+        cargarConfigGlobal();
+        escucharMenu();
+        obtenerUbicacionActualizada();
+    };
+
+    function cargarConfigGlobal() { 
+        db.collection("configuracion").doc("global").onSnapshot(doc => { 
+            if(doc.exists) {
+                configLogistica = doc.data();
+                const status = document.getElementById('statusHorario');
+                status.innerText = configLogistica.abierto ? "🟢 ABIERTO AHORA" : "🔴 CERRADO";
+                status.className = `horario-tag ${configLogistica.abierto ? 'abierto' : 'cerrado'}`;
+            }
+        }); 
+    }
+
+    function escucharMenu() {
+        db.collection("menu").onSnapshot(snap => {
+            const contenedor = document.getElementById('contenedorMenu');
+            contenedor.innerHTML = "";
+            
+            let menuAgrupado = {};
+            snap.forEach(doc => {
+                const m = doc.data(); 
+                if(!m.disponible) return;
+                const dist = m.distribuidor || "Antojitos";
+                if(!menuAgrupado[dist]) menuAgrupado[dist] = [];
+                menuAgrupado[dist].push({ id: doc.id, ...m });
+            });
+
+            let html = "";
+            for (const dist in menuAgrupado) {
+                html += `<div class="grupo-distribuidor"><div class="titulo-distribuidor">🏪 ${dist}</div>`;
+                menuAgrupado[dist].forEach(m => {
+                    const q = carrito[m.id] ? carrito[m.id].qty : 0;
+                    html += `<div class="item-comida">
+                        <div class="info"><b>${m.nombre}</b><span>C$ ${m.precio}</span></div>
+                        <div class="controles">
+                            <button class="btn-mas" onclick="modificar('${m.id}',-1,${m.precio},'${m.nombre}')">-</button>
+                            <b id="q-${m.id}" style="width:20px; text-align:center;">${q}</b>
+                            <button class="btn-mas" onclick="modificar('${m.id}',1,${m.precio},'${m.nombre}')">+</button>
+                        </div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            contenedor.innerHTML = html || "<p style='text-align:center;'>Menú no disponible</p>";
+        });
+    }
+
+    function obtenerUbicacionActualizada() {
+        if (!navigator.geolocation) return;
+        navigator.geolocation.getCurrentPosition((pos) => {
+            coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            const lat2 = Number(configLogistica.latitud);
+            const lon2 = Number(configLogistica.longitud);
+            const R = 6371;
+            const dLat = (lat2 - pos.coords.latitude) * Math.PI / 180;
+            const dLon = (lon2 - pos.coords.longitude) * Math.PI / 180;
+            const a = Math.sin(dLat/2)**2 + Math.cos(pos.coords.latitude*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+            const dist = R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+            
+            envioCalculado = Math.max(Number(configLogistica.precio_minimo), Math.ceil(dist * Number(configLogistica.precio_km)));
+            actualizarTotales();
+        }, null, {enableHighAccuracy: true});
+    }
+
+    function modificar(id, cantidad, precio, nombre) {
+        if(!carrito[id]) carrito[id] = {qty:0, precio:Number(precio), nombre:nombre};
+        carrito[id].qty = Math.max(0, carrito[id].qty + cantidad);
+        document.getElementById('q-'+id).innerText = carrito[id].qty;
+        actualizarTotales();
+    }
+
+    function actualizarTotales() {
+        let sub = 0;
+        for(let k in carrito) sub += (carrito[k].qty * carrito[k].precio);
+        document.getElementById('subTotal').innerText = "C$ " + sub;
+        document.getElementById('envioMonto').innerText = "C$ " + envioCalculado;
+        document.getElementById('granTotal').innerText = "C$ " + (sub + envioCalculado);
+    }
+
+    async function lanzarPedido() {
+        const btn = document.getElementById('btnPedirFinal');
+        
+        // --- CANDADO 2: Bloqueo inmediato de función ---
+        if (enProcesoDeEnvio || btn.disabled) return; 
+        
+        if (!configLogistica.abierto) return alert("📍 El local está CERRADO.");
+
+        const ahora = Date.now();
+        const ultimaVez = localStorage.getItem('last_order_time') || 0;
+        if(ahora - ultimaVez < 30000) {
+            document.getElementById('msgSpam').classList.remove('hidden');
+            return;
+        }
+
+        const nom = document.getElementById('nombreCli').value.trim();
+        const dir = document.getElementById('dirCli').value.trim();
+        let lista = []; let sub = 0;
+        
+        for(let k in carrito) { 
+            if(carrito[k].qty > 0) { 
+                lista.push(`${carrito[k].qty}x ${carrito[k].nombre}`); 
+                sub += (carrito[k].qty * carrito[k].precio); 
+            } 
+        }
+        
+        if(!nom || !dir || lista.length === 0) return alert("Datos incompletos.");
+
+        // --- CANDADO 3: Activación de estados de carga ---
+        enProcesoDeEnvio = true;
+        btn.innerText = "⌛ ENVIANDO...";
+        btn.disabled = true;
+
+        try {
+            const docRef = await db.collection("pedidos").add({
+                cliente: nom, 
+                ubicacion: dir, 
+                geolocalizacion: coordsCliente, 
+                pedido: lista, 
+                envio: envioCalculado,
+                total: sub + envioCalculado, 
+                estado: "NUEVO", 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            localStorage.setItem('antojitos_nombre', nom);
+            localStorage.setItem('antojitos_dir', dir);
+            localStorage.setItem('last_order_time', Date.now());
+
+            document.getElementById('vistaPedido').classList.add('hidden');
+            document.getElementById('pantallaEstado').classList.remove('hidden');
+            
+            db.collection("pedidos").doc(docRef.id).onSnapshot(d => {
+                if(d.exists) {
+                    const est = d.data().estado;
+                    document.getElementById('badgeEstado').innerText = est;
+                    if(["ENTREGADO", "RECHAZADO"].includes(est)) {
+                        document.getElementById('animacionEstado').classList.add('hidden');
+                        document.getElementById('msgEstado').innerText = "Pedido Finalizado";
+                    }
+                }
+            });
+
+        } catch (err) {
+            alert("Error de conexión.");
+            enProcesoDeEnvio = false;
+            btn.innerText = "🚀 REINTENTAR PEDIDO";
+            btn.disabled = false;
+        }
+    }
+
+    function volverAlMenu() { location.reload(); }
+</script>
+</body>
+</html>
