@@ -19,17 +19,24 @@
         .tab-content.active { display: block; }
         
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .pedido-card { border-left: 6px solid #ccc; }
-        .pedido-card.NUEVO { border-left-color: var(--azul); }
-        .pedido-card.EN\ CAMINO { border-left-color: var(--naranja); }
-        .pedido-card.ENTREGADO { border-left-color: var(--verde); }
+        .pedido-card { border-left: 6px solid #ccc; position: relative; }
+        .fecha-orden { font-size: 0.75em; color: #7f8c8d; display: block; margin-bottom: 8px; font-weight: bold; }
 
-        .btn-acc { background: var(--verde); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-borrar { background: var(--rojo); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+        /* Estilo Tarjetas de Menú */
+        .contenedor-producto { background: white; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; overflow: hidden; }
+        .distribuidor-header { background: var(--oscuro); color: white; padding: 8px 15px; font-weight: bold; font-size: 0.85em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;}
+        .item-comida { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .info b { display: block; color: var(--oscuro); font-size: 1.05em; }
+        .info span { color: var(--verde); font-size: 1.1em; font-weight: bold; }
+
+        .btn-acc { background: var(--verde); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8em; }
+        .btn-borrar { background: var(--rojo); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
+        .btn-edit { background: var(--azul); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold;}
+        .btn-peligro-total { background: #c0392b; color: white; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 15px; }
         
-        .input-group { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; }
-        .input-group label { flex: 1; font-size: 0.9em; font-weight: 600; }
-        .input-group input { flex: 1.6; padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
+        .input-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .input-group label { font-size: 0.9em; font-weight: bold; margin-bottom: 5px; color: var(--oscuro); }
+        .input-group input, .input-group textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
         
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
@@ -38,7 +45,7 @@
         input:checked + .slider { background-color: var(--verde); }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        .btn-save { background: var(--oscuro); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; }
+        .btn-save { background: var(--oscuro); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -53,25 +60,23 @@
 </div>
 
 <div id="pedidos" class="tab-content active">
-    <div style="display:flex; gap:10px; margin-bottom:15px;">
-        <button onclick="limpiarEntregados()" style="flex:1; padding:10px; background:var(--gris); border-radius:8px; border:1px solid #ddd;">Limpiar Entregados</button>
-    </div>
+    <button class="btn-peligro-total" onclick="eliminarTodoElHistorial()">⚠️ BORRAR TODO EL HISTORIAL ⚠️</button>
     <div id="listaPedidos">Cargando pedidos...</div>
 </div>
 
 <div id="menu" class="tab-content">
-    <button onclick="gestionarPlato()" style="background:var(--naranja); color:white; border:none; padding:15px; border-radius:10px; width:100%; font-weight:bold; margin-bottom:15px;">+ NUEVO PRODUCTO</button>
+    <button onclick="crearPlato()" style="background:var(--naranja); color:white; padding:15px; border-radius:10px; width:100%; font-weight:bold; margin-bottom:15px; border:none; cursor:pointer;">+ NUEVO PRODUCTO</button>
     <div id="gridMenu"></div>
 </div>
 
 <div id="repartidores" class="tab-content">
-    <h4>Postulantes y Activos</h4>
+    <h4 style="color: var(--oscuro);">Postulantes y Activos</h4>
     <div id="listaRepartidores">Cargando personal...</div>
 </div>
 
 <div id="ajustes" class="tab-content">
     <div class="card">
-        <h3>🏪 Operación</h3>
+        <h3 style="color: var(--naranja); margin-top: 0;">🏪 Operación</h3>
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <span>Estado del Local: <b id="estadoTexto">...</b></span>
             <label class="toggle-switch">
@@ -82,20 +87,29 @@
     </div>
 
     <div class="card">
-        <h3>💰 Finanzas y Logística</h3>
+        <h3 style="color: var(--naranja); margin-top: 0;">📋 Reclutamiento y Tarifas</h3>
+        
         <div class="input-group">
-            <label>Comisión Repartos (%)</label>
-            <input type="number" id="confComision" placeholder="15">
+            <label>Reglas para los Repartidores</label>
+            <textarea id="confReglas" rows="4" placeholder="Ej: 1. Ser respetuoso. 2. Entregar a tiempo..."></textarea>
         </div>
+        
         <div class="input-group">
-            <label>Envío Base (C$)</label>
-            <input type="number" id="confMinimo" placeholder="15">
+            <label>Porcentaje para el Administrador (%)</label>
+            <input type="number" id="confPorcentaje" placeholder="Ej: 10">
         </div>
+
         <div class="input-group">
-            <label>Precio por Km (C$)</label>
-            <input type="number" id="confPrecioKm" placeholder="15">
+            <label>Precio Base de Envío (C$)</label>
+            <input type="number" id="confPrecioBase" placeholder="Ej: 20">
         </div>
-        <button onclick="guardarAjustesRapido()" class="btn-save" style="margin-top:10px;">GUARDAR AJUSTES</button>
+
+        <div class="input-group">
+            <label>Precio Extra por Kilómetro (C$)</label>
+            <input type="number" id="confPrecioKm" placeholder="Ej: 10">
+        </div>
+
+        <button onclick="guardarAjustesRapido()" class="btn-save">GUARDAR AJUSTES</button>
     </div>
 </div>
 
@@ -113,61 +127,88 @@
 
     window.onload = () => { escucharPedidos(); escucharMenu(); escucharRepartidores(); cargarConfig(); };
 
+    // ==========================================
+    // CONFIGURACIONES Y AJUSTES
+    // ==========================================
     function cargarConfig() {
         db.collection("configuracion").doc("global").onSnapshot(doc => {
             if(doc.exists) {
                 const d = doc.data();
-                document.getElementById('confComision').value = d.comision || 15;
-                document.getElementById('confMinimo').value = d.precio_minimo || 15;
-                document.getElementById('confPrecioKm').value = d.precio_km || 15;
                 document.getElementById('toggleAbierto').checked = d.abierto || false;
                 document.getElementById('estadoTexto').innerText = d.abierto ? "ABIERTO" : "CERRADO";
                 document.getElementById('estadoTexto').style.color = d.abierto ? "green" : "red";
+                
+                document.getElementById('confReglas').value = d.reglas || "";
+                document.getElementById('confPorcentaje').value = d.porcentaje || 0;
+                document.getElementById('confPrecioBase').value = d.precioBase || 0;
+                document.getElementById('confPrecioKm').value = d.precioKm || 0;
             }
         });
     }
 
     async function guardarAjustesRapido() {
         await db.collection("configuracion").doc("global").set({
-            comision: parseFloat(document.getElementById('confComision').value),
-            precio_minimo: parseFloat(document.getElementById('confMinimo').value),
-            precio_km: parseFloat(document.getElementById('confPrecioKm').value),
-            abierto: document.getElementById('toggleAbierto').checked
+            abierto: document.getElementById('toggleAbierto').checked,
+            reglas: document.getElementById('confReglas').value,
+            porcentaje: parseFloat(document.getElementById('confPorcentaje').value || 0),
+            precioBase: parseFloat(document.getElementById('confPrecioBase').value || 0),
+            precioKm: parseFloat(document.getElementById('confPrecioKm').value || 0)
         }, { merge: true });
-        alert("Ajustes guardados.");
+        alert("Ajustes guardados correctamente.");
     }
 
+    // ==========================================
+    // ÓRDENES
+    // ==========================================
     function escucharPedidos() {
-        db.collection("pedidos").orderBy("timestamp", "desc").limit(20).onSnapshot(snap => {
+        db.collection("pedidos").orderBy("timestamp", "desc").onSnapshot(snap => {
             const cont = document.getElementById('listaPedidos');
             cont.innerHTML = "";
             snap.forEach(doc => {
                 const p = doc.data();
                 
-                // Corrección de campos para evitar 'undefined'
-                const cliente = p.cliente || "Sin nombre";
-                const monto = p.total || p.total_comida || "0";
-                const productos = Array.isArray(p.pedido) ? p.pedido.join(", ") : (p.pedido || "Sin productos");
-                const direccion = p.ubicacion || "Sin dirección";
-                const motorizado = p.repartidorNombre || p.repartidorId || 'Pendiente...';
+                // Formateo de Fecha
+                let fechaHora = "Fecha no registrada";
+                if(p.timestamp) {
+                    const date = p.timestamp.toDate();
+                    fechaHora = date.toLocaleString('es-NI', { dateStyle: 'medium', timeStyle: 'short' });
+                }
 
                 cont.innerHTML += `
-                    <div class="card pedido-card ${p.estado || 'NUEVO'}">
-                        <div style="display:flex; justify-content:space-between;">
-                            <b>👤 ${cliente}</b>
-                            <span style="color:var(--verde); font-weight:bold;">C$ ${monto}</span>
-                        </div>
-                        <div style="font-size:0.85em; margin:5px 0;">📦 ${productos}</div>
-                        <div style="font-size:0.8em; color:gray;">📍 ${direccion}</div>
-                        <div style="font-size:0.8em; margin-top:5px;">🛵 Repartidor: <b style="color:var(--naranja)">${motorizado}</b></div>
-                        <div style="margin-top:10px; display:flex; gap:10px;">
-                            <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar Orden</button>
-                        </div>
+                    <div class="card pedido-card">
+                        <span class="fecha-orden">🕒 ${fechaHora}</span>
+                        <b>👤 ${p.cliente}</b> - C$ ${p.total}<br>
+                        📦 ${Array.isArray(p.pedido) ? p.pedido.join(", ") : p.pedido}<br>
+                        📍 ${p.ubicacion}<br><br>
+                        <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar Historial</button>
                     </div>`;
             });
         });
     }
 
+    async function eliminarPedido(id) { 
+        if(confirm("¿Estás seguro de que quieres borrar este pedido del historial?")) {
+            await db.collection("pedidos").doc(id).delete(); 
+        }
+    }
+
+    async function eliminarTodoElHistorial() {
+        const confirmar1 = confirm("⚠️ ATENCIÓN: Estás a punto de borrar TODOS los pedidos de la base de datos. Esto no se puede deshacer. ¿Continuar?");
+        if(confirmar1) {
+            const confirmar2 = confirm("¿Estás ABSOLUTAMENTE SEGURO? Presiona Aceptar para borrar todo.");
+            if(confirmar2) {
+                const snap = await db.collection("pedidos").get();
+                const batch = db.batch();
+                snap.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+                alert("El historial ha sido borrado por completo.");
+            }
+        }
+    }
+
+    // ==========================================
+    // MENÚ
+    // ==========================================
     function escucharMenu() {
         db.collection("menu").onSnapshot(snap => {
             const grid = document.getElementById('gridMenu');
@@ -175,86 +216,118 @@
             snap.forEach(doc => {
                 const m = doc.data();
                 grid.innerHTML += `
-                    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <b style="text-transform:uppercase;">${m.nombre}</b><br>
-                            <small>C$ ${m.precio} | ${m.distribuidor}</small>
+                    <div class="contenedor-producto">
+                        <div class="distribuidor-header">
+                            <span>🏠 ${m.distribuidor || 'Antojitos'}</span>
                         </div>
-                        <div>
-                            <button onclick="gestionarPlato('${doc.id}','${m.nombre}',${m.precio},'${m.distribuidor}')">📝</button>
-                            <button onclick="eliminarPlato('${doc.id}')">🗑️</button>
+                        <div class="item-comida">
+                            <div class="info">
+                                <b>${m.nombre.toUpperCase()}</b>
+                                <span>C$ ${m.precio}</span>
+                            </div>
+                            <div style="display:flex; gap: 5px;">
+                                <button class="btn-edit" onclick="editarPlato('${doc.id}', '${m.nombre}', ${m.precio}, '${m.distribuidor}')">✏️</button>
+                                <button class="btn-borrar" onclick="eliminarPlato('${doc.id}')">🗑️</button>
+                            </div>
                         </div>
                     </div>`;
             });
         });
     }
 
+    async function crearPlato() {
+        const nom = prompt("Nombre del nuevo producto:");
+        if(!nom) return;
+        const pre = prompt("Precio (C$):");
+        if(!pre) return;
+        const dis = prompt("Distribuidor (Local que lo vende):", "Antojitos PN");
+        
+        await db.collection("menu").add({
+            nombre: nom, precio: parseFloat(pre), distribuidor: dis, disponible: true
+        });
+    }
+
+    async function editarPlato(id, nombreActual, precioActual, distribuidorActual) {
+        const nom = prompt("Editar Nombre:", nombreActual);
+        if(!nom) return;
+        const pre = prompt("Editar Precio (C$):", precioActual);
+        if(!pre) return;
+        const dis = prompt("Editar Distribuidor:", distribuidorActual);
+
+        await db.collection("menu").doc(id).update({
+            nombre: nom, precio: parseFloat(pre), distribuidor: dis || "Antojitos PN"
+        });
+    }
+
+    async function eliminarPlato(id) { 
+        if(confirm("¿Seguro que deseas eliminar este producto del menú?")) {
+            await db.collection("menu").doc(id).delete(); 
+        }
+    }
+
+    // ==========================================
+    // EQUIPO (REPARTIDORES)
+    // ==========================================
     function escucharRepartidores() {
-        db.collection("usuarios").where("rol", "in", ["REPARTIDOR", "POSTULANTE"]).onSnapshot(snap => {
+        // Traemos a los postulantes y a los repartidores aprobados
+        db.collection("usuarios").where("rol", "in", ["POSTULANTE", "REPARTIDOR"]).onSnapshot(snap => {
             const cont = document.getElementById('listaRepartidores');
             cont.innerHTML = "";
             snap.forEach(doc => {
                 const u = doc.data();
-                const nombreMostrar = u.nombre || u.usuario || "Sin Nombre";
-                const esActivo = u.rol === "REPARTIDOR" && u.aprobado === true;
+                const esPostulante = u.rol === "POSTULANTE";
+                
+                let botones = "";
+                if(esPostulante) {
+                    botones = `
+                        <div style="display:flex; gap:5px; margin-top:10px;">
+                            <button class="btn-acc" style="flex:1;" onclick="aceptarRepartidor('${doc.id}')">Aceptar</button>
+                            <button class="btn-borrar" style="flex:1;" onclick="rechazarRepartidor('${doc.id}')">Rechazar</button>
+                        </div>`;
+                } else {
+                    botones = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                            <span style="color:var(--verde); font-weight:bold; font-size:0.85em;">✅ ACTIVO</span>
+                            <button class="btn-borrar" onclick="eliminarRepartidor('${doc.id}')">Eliminar</button>
+                        </div>`;
+                }
 
                 cont.innerHTML += `
-                    <div class="card" style="display:flex; justify-content:space-between; align-items:center; border-left: 5px solid ${esActivo ? 'var(--verde)' : 'var(--azul)'}">
-                        <div>
-                            <b>${nombreMostrar}</b><br>
-                            <small>📞 ${u.telefono || 'Sin tel'}</small>
-                        </div>
-                        <div style="display:flex; flex-direction:column; gap:5px;">
-                            ${!esActivo ? 
-                                `<button class="btn-acc" onclick="aprobarRepartidor('${doc.id}')">APROBAR</button>` : 
-                                `<span style="color:var(--verde); font-weight:bold; text-align:center; font-size:0.8em;">ACTIVO ✅</span>`
-                            }
-                            <button class="btn-borrar" style="padding:4px; font-size:0.7em;" onclick="eliminarUsuario('${doc.id}')">ELIMINAR</button>
-                        </div>
+                    <div class="card" style="border-left: 5px solid ${esPostulante ? 'var(--naranja)' : 'var(--verde)'};">
+                        <b>👤 ${u.nombre}</b><br>
+                        📱 ${u.telefono}<br>
+                        <small style="color: gray;">Estado: ${esPostulante ? 'Esperando aprobación...' : 'Repartidor Autorizado'}</small>
+                        ${botones}
                     </div>`;
             });
         });
     }
 
-    async function gestionarPlato(id=null, n='', p='', d='Antojitos') {
-        const nom = prompt("Nombre del producto:", n);
-        const pre = prompt("Precio (C$):", p);
-        const dis = prompt("Local que lo vende:", d);
-
-        if(nom && pre) {
-            const data = { 
-                nombre: nom.toLowerCase(), 
-                precio: parseFloat(pre), 
-                distribuidor: dis || "Antojitos",
-                disponible: true 
-            };
-            if(id) await db.collection("menu").doc(id).update(data);
-            else await db.collection("menu").add(data);
-        }
-    }
-
-    async function aprobarRepartidor(id) {
-        if(confirm("¿Quieres activar a este repartidor?")) {
-            await db.collection("usuarios").doc(id).update({ 
-                rol: "REPARTIDOR", 
+    async function aceptarRepartidor(id) {
+        if(confirm("¿Aceptar a este usuario como Repartidor Oficial?")) {
+            await db.collection("usuarios").doc(id).update({
+                rol: "REPARTIDOR",
                 aprobado: true,
-                estado_reparto: "DISPONIBLE"
+                disponible: true
             });
-            alert("¡Repartidor activado!");
         }
     }
 
-    async function eliminarPedido(id) { if(confirm("¿Borrar orden?")) await db.collection("pedidos").doc(id).delete(); }
-    async function eliminarPlato(id) { if(confirm("¿Borrar del menú?")) await db.collection("menu").doc(id).delete(); }
-    async function eliminarUsuario(id) { if(confirm("¿Eliminar usuario?")) await db.collection("usuarios").doc(id).delete(); }
-
-    async function limpiarEntregados() {
-        if(confirm("Se borrarán las órdenes ENTREGADAS. ¿Continuar?")) {
-            const snap = await db.collection("pedidos").where("estado","==","ENTREGADO").get();
-            snap.forEach(doc => doc.ref.delete());
+    async function rechazarRepartidor(id) {
+        if(confirm("¿Rechazar esta solicitud? El registro será eliminado.")) {
+            await db.collection("usuarios").doc(id).delete();
         }
     }
 
+    async function eliminarRepartidor(id) {
+        if(confirm("¿Seguro que quieres eliminar a este Repartidor? Ya no podrá recibir órdenes.")) {
+            await db.collection("usuarios").doc(id).delete();
+        }
+    }
+
+    // ==========================================
+    // NAVEGACIÓN DE PESTAÑAS
+    // ==========================================
     function openTab(evt, id) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
