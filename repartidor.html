@@ -71,9 +71,21 @@
     };
 
     function verificarSesion() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const idDesdeUrl = urlParams.get('id');
+
+        if (idDesdeUrl) {
+            localStorage.setItem("repartidor_id", idDesdeUrl);
+            miId = idDesdeUrl;
+        }
+
         if (!miId) { 
             document.getElementById('pantallaPrincipal').classList.remove('hidden');
-            document.getElementById('listaPedidos').innerHTML = "<div class='card'><h4 style='color:var(--rojo); text-align:center;'>⚠️ No has iniciado sesión</h4><p style='text-align:center;'>Para recibir pedidos, tu cuenta debe ser activada o debes iniciar sesión desde la aplicación principal.</p></div>";
+            document.getElementById('listaPedidos').innerHTML = `
+                <div class='card'>
+                    <h4 style='color:var(--rojo); text-align:center;'>⚠️ No has iniciado sesión</h4>
+                    <p style='text-align:center;'>Para entrar, usa tu enlace personal de trabajador.</p>
+                </div>`;
             return; 
         } 
         
@@ -85,6 +97,9 @@
                 document.getElementById('userTag').innerText = `@${u.usuario} (${miEstado})`;
                 document.getElementById('pantallaPrincipal').classList.remove('hidden');
                 escucharPedidos();
+            } else {
+                localStorage.removeItem("repartidor_id");
+                location.reload();
             }
         });
     }
@@ -95,7 +110,7 @@
           .onSnapshot(snap => {
             let html = "";
             let container = document.getElementById('listaPedidos');
-            let tengoPedidoEnCamino = false; // Variable para saber si de verdad tenemos un pedido
+            let tengoPedidoEnCamino = false;
 
             snap.forEach(doc => {
                 const p = doc.data();
@@ -104,10 +119,10 @@
                 if(pedidosRechazados.includes(idDoc)) return;
 
                 if(p.repartidor_id === miId && p.estado === "EN CAMINO") {
-                    tengoPedidoEnCamino = true; // Confirmamos que sí hay un pedido activo
+                    tengoPedidoEnCamino = true;
                     let botonMaps = "";
                     if (p.geolocalizacion) {
-                        // Enlace corregido a la API oficial de direcciones de Google Maps
+                        // --- ENLACE DE MAPAS CORREGIDO ---
                         const urlMaps = `https://www.google.com/maps/dir/?api=1&destination=${p.geolocalizacion.lat},${p.geolocalizacion.lng}&travelmode=driving`;
                         botonMaps = `
                             <a href="${urlMaps}" target="_blank" class="btn btn-maps">
@@ -137,7 +152,6 @@
                 }
             });
 
-            // AUTOCORRECCIÓN: Si el sistema dice que estás ocupado pero NO hay pedido, te libera.
             if (miEstado === "OCUPADO" && !tengoPedidoEnCamino && miId) {
                 miEstado = "DISPONIBLE";
                 db.collection("usuarios").doc(miId).update({ estado_reparto: "DISPONIBLE" }).catch(e => console.log(e));
@@ -226,4 +240,3 @@
 </script>
 </body>
 </html>
-
