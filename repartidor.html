@@ -12,6 +12,7 @@
         .hidden { display: none !important; }
         .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
         
+        /* Estilos Menú tipo Cliente */
         .grupo-distribuidor { margin-bottom: 15px; border: 1px solid #eee; border-radius: 15px; overflow: hidden; background: white; }
         .titulo-distribuidor { background: var(--oscuro); color: white; padding: 8px 12px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; }
         .menu-rep-item { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 0.9em; }
@@ -20,7 +21,7 @@
         .pedido-activo { border-left-color: var(--verde); background: #f0fff4; }
         .btn { width: 100%; padding: 15px; border: none; border-radius: 12px; font-weight: bold; color: white; cursor: pointer; transition: 0.3s; text-align: center; display: block; text-decoration: none; margin-top: 10px; box-sizing: border-box;}
         .btn-acc { background: var(--verde); }
-        .btn-maps { background: var(--azulMaps); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.95em; }
+        .btn-maps { background: var(--azulMaps); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.9em; margin-bottom: 10px; }
         .btn-rechazar { background: var(--rojo); padding: 10px; font-size: 0.85em; margin-top: 5px; }
         .timer-tag { position: absolute; top: 10px; right: 10px; font-size: 0.7em; background: #ffebee; color: var(--rojo); padding: 2px 8px; border-radius: 10px; font-weight: bold; }
         .badge { background: var(--naranja); color: white; padding: 3px 8px; border-radius: 5px; font-size: 0.8em; }
@@ -30,7 +31,7 @@
 <body>
 
     <div id="pantallaPrincipal" class="hidden">
-        <div class="comision-box">📢 Comisión Administrativa: <b id="val-comision">--</b>%</div>
+        <div class="comision-box">📢 Comisión Administrativa: <b class="val-comision">--</b>%</div>
         
         <button onclick="document.getElementById('visorMenu').classList.toggle('hidden')" class="btn" style="background: #e0e0e0; color: var(--oscuro); margin-bottom: 15px;">🍔 CONSULTAR MENÚ ACTUAL</button>
         <div id="visorMenu" class="hidden card">
@@ -58,7 +59,7 @@
     const db = firebase.firestore();
 
     let miId = localStorage.getItem("repartidor_id");
-    let miEstado = "DISPONIBLE"; 
+    let miEstado = "DISPONIBLE"; // Estado local inicial
     let miNombreUser = "";
     let porcentajeComision = 15;
     let temporizadores = {};
@@ -71,35 +72,16 @@
     };
 
     function verificarSesion() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const idDesdeUrl = urlParams.get('id');
-
-        if (idDesdeUrl) {
-            localStorage.setItem("repartidor_id", idDesdeUrl);
-            miId = idDesdeUrl;
-        }
-
-        if (!miId) { 
-            document.getElementById('pantallaPrincipal').classList.remove('hidden');
-            document.getElementById('listaPedidos').innerHTML = `
-                <div class='card'>
-                    <h4 style='color:var(--rojo); text-align:center;'>⚠️ No has iniciado sesión</h4>
-                    <p style='text-align:center;'>Para entrar, usa tu enlace personal de trabajador.</p>
-                </div>`;
-            return; 
-        } 
+        if (!miId) { location.reload(); return; } // Si no hay ID, debería ir a registro
         
         db.collection("usuarios").doc(miId).onSnapshot(doc => {
             if (doc.exists) {
                 const u = doc.data();
                 miNombreUser = u.usuario;
-                miEstado = u.estado_reparto || "DISPONIBLE"; 
+                miEstado = u.estado_reparto || "DISPONIBLE"; // Leemos si estamos LIBRES u OCUPADOS
                 document.getElementById('userTag').innerText = `@${u.usuario} (${miEstado})`;
                 document.getElementById('pantallaPrincipal').classList.remove('hidden');
                 escucharPedidos();
-            } else {
-                localStorage.removeItem("repartidor_id");
-                location.reload();
             }
         });
     }
@@ -110,7 +92,7 @@
           .onSnapshot(snap => {
             let html = "";
             let container = document.getElementById('listaPedidos');
-            let tengoPedidoEnCamino = false;
+            container.innerHTML = ""; 
 
             snap.forEach(doc => {
                 const p = doc.data();
@@ -118,33 +100,26 @@
 
                 if(pedidosRechazados.includes(idDoc)) return;
 
-                if(p.repartidor_id === miId && p.estado === "EN CAMINO") {
-                    tengoPedidoEnCamino = true;
-                    let botonMaps = "";
-                    if (p.geolocalizacion) {
-                        // --- ENLACE DE MAPAS CORREGIDO ---
-                        const urlMaps = `https://www.google.com/maps/dir/?api=1&destination=${p.geolocalizacion.lat},${p.geolocalizacion.lng}&travelmode=driving`;
-                        botonMaps = `
-                            <a href="${urlMaps}" target="_blank" class="btn btn-maps">
-                                <img src="https://cdn-icons-png.flaticon.com/512/2991/2991231.png" width="18" style="filter: brightness(0) invert(1);">
-                                VER RUTA EN GOOGLE MAPS
-                            </a>`;
-                    }
+                let linkMaps = p.geolocalizacion ? `<a href="https://www.google.com/maps/dir/?api=1&destination=${p.geolocalizacion.lat},${p.geolocalizacion.lng}&travelmode=driving" target="_blank" class="btn btn-maps">🗺️ VER RUTA EN MAPS</a>` : "";
 
+                // 1. SI EL PEDIDO ES MÍO (ESTÁ EN CAMINO)
+                if(p.repartidor_id === miId && p.estado === "EN CAMINO") {
+                    const comisionJef = Math.round(p.total * (porcentajeComision / 100));
                     html += `<div class="pedido-card pedido-activo">
-                        <span class="badge" style="background:var(--verde)">ORDEN ACTUAL</span><br><br>
+                        <span class="badge" style="background:var(--verde)">TIENES ESTA ORDEN</span><br><br>
                         <b>Cliente:</b> ${p.cliente}<br>📍 <b>Dir:</b> ${p.ubicacion}<br>
                         <b style="color:var(--naranja); font-size:1.2em;">Total: C$ ${p.total}</b>
-                        <hr>
-                        ${botonMaps}
+                        ${linkMaps} <hr>
                         <button class="btn btn-acc" onclick="finalizarPedido('${idDoc}')">ENTREGA FINALIZADA</button>
                     </div>`;
                 }
+                // 2. SI EL PEDIDO ES NUEVO Y YO ESTOY "DISPONIBLE"
                 else if(p.estado === "NUEVO" && miEstado === "DISPONIBLE") {
                     html += `<div class="pedido-card" id="card-${idDoc}">
                         <div class="timer-tag" id="timer-${idDoc}">1:30</div>
                         <b>👤 ${p.cliente}</b><br>📍 ${p.ubicacion}<br>
                         <b style="color:var(--verde)">Monto: C$ ${p.total}</b><br>
+                        ${linkMaps} 
                         <button class="btn btn-acc" onclick="aceptarPedido('${idDoc}')">ACEPTAR PEDIDO</button>
                         <button class="btn btn-rechazar" onclick="rechazarPedido('${idDoc}')">RECHAZAR</button>
                     </div>`;
@@ -152,37 +127,27 @@
                 }
             });
 
-            if (miEstado === "OCUPADO" && !tengoPedidoEnCamino && miId) {
-                miEstado = "DISPONIBLE";
-                db.collection("usuarios").doc(miId).update({ estado_reparto: "DISPONIBLE" }).catch(e => console.log(e));
-            }
-
-            container.innerHTML = html || `<p style='text-align:center; color:gray; padding:20px;'>${miEstado === 'OCUPADO' ? 'Termina tu pedido actual para ver más.' : 'No hay pedidos nuevos por ahora...'}</p>`;
+            container.innerHTML = html || `<p style='text-align:center; color:gray; padding:20px;'>${miEstado === 'OCUPADO' ? 'Termina tu pedido actual para ver más.' : 'Esperando pedidos nuevos...'}</p>`;
         });
     }
 
     async function aceptarPedido(id) {
         try {
+            // Marcamos al repartidor como OCUPADO y asignamos el pedido
             await db.collection("usuarios").doc(miId).update({ estado_reparto: "OCUPADO" });
             await db.collection("pedidos").doc(id).update({ 
                 estado: "EN CAMINO", 
                 repartidor_id: miId, 
                 repartidorNombre: miNombreUser 
             });
-        } catch(e) { console.error(e); }
+        } catch(e) { alert("Error al aceptar."); }
     }
 
     async function finalizarPedido(id) {
-        if(confirm("¿Confirmas que ya entregaste el pedido?")) {
-            try {
-                miEstado = "DISPONIBLE"; 
-                document.getElementById('listaPedidos').innerHTML = "Actualizando...";
-
-                await db.collection("usuarios").doc(miId).update({ estado_reparto: "DISPONIBLE" });
-                await db.collection("pedidos").doc(id).update({ estado: "ENTREGADO" });
-                
-                escucharPedidos(); 
-            } catch(e) { alert("Error al finalizar: " + e.message); }
+        if(confirm("¿Confirmas la entrega?")) {
+            // Marcamos pedido como entregado y al repartidor como DISPONIBLE
+            await db.collection("pedidos").doc(id).update({ estado: "ENTREGADO" });
+            await db.collection("usuarios").doc(miId).update({ estado_reparto: "DISPONIBLE" });
         }
     }
 
@@ -191,16 +156,12 @@
             pedidosRechazados.push(id);
             localStorage.setItem("pedidos_rechazados", JSON.stringify(pedidosRechazados));
         }
-        escucharPedidos();
+        escucharPedidos(); // Refrescar vista
     }
 
+    // --- Funciones de apoyo (Menú, Config, Temporizador) ---
     function escucharConfigGlobal() {
-        db.collection("configuracion").doc("global").onSnapshot(doc => { 
-            if(doc.exists) {
-                porcentajeComision = doc.data().comision || 0;
-                document.getElementById('val-comision').innerText = porcentajeComision;
-            } 
-        });
+        db.collection("configuracion").doc("global").onSnapshot(doc => { if(doc.exists) porcentajeComision = doc.data().comision || 15; });
     }
 
     function escucharMenuParaRepartidor() {
