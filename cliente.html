@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antojitos Pueblo Nuevo - Sistema Integrado</title>
+    <title>Antojitos Pueblo Nuevo - Pedidos</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <style>
@@ -11,138 +11,71 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; }
         .hidden { display: none !important; }
         
-        #modalPermisos { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: white; padding: 30px; border-radius: 25px; text-align: center; max-width: 320px; width: 90%; }
         .card { background: white; padding: 10px 20px 25px 20px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         
-        .horario-tag { display: block; text-align: center; font-size: 0.75em; padding: 5px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
-        .abierto { background: #e8f5e9; color: #2e7d32; }
-        .cerrado { background: #ffebee; color: #c62828; }
+        /* Semáforo GPS */
+        .status-gps { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; margin-bottom: 15px; border-radius: 15px; font-weight: bold; font-size: 0.9em; transition: 0.3s; }
+        .gps-buscando { background: #ffeaa7; color: #d35400; border: 1px solid #f1c40f; }
+        .gps-listo { background: #d1fad7; color: #27ae60; border: 1px solid #2ecc71; }
+        .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+        .dot-rojo { background-color: #e74c3c; animation: parpadeo 1s infinite; }
+        .dot-verde { background-color: #2ecc71; }
+        @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
+        .horario-tag { display: block; text-align: center; font-size: 0.75em; padding: 5px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
         h2 { color: var(--naranja); text-align: center; margin-bottom: 5px; }
         
-        .contenedor-producto {
-            background: white;
-            border-radius: 18px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            border: 1px solid #eee;
-            overflow: hidden;
-        }
-
-        .distribuidor-header {
-            background: var(--oscuro);
-            color: white;
-            padding: 8px 15px;
-            font-weight: bold;
-            font-size: 0.85em;
-            text-transform: uppercase;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .contenedor-producto { background: white; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; overflow: hidden; }
+        .distribuidor-header { background: var(--oscuro); color: white; padding: 8px 15px; font-weight: bold; font-size: 0.85em; text-transform: uppercase; }
 
         .item-comida { padding: 15px; display: flex; align-items: center; }
         .info { flex: 1; }
-        .info b { display: block; color: var(--oscuro); font-size: 1.05em; font-weight: 500; }
-        .info span { color: var(--verde); font-size: 1.1em; margin-top: 5px; display: inline-block; }
+        .info b { display: block; color: var(--oscuro); font-size: 1.05em; }
+        .info span { color: var(--verde); font-size: 1.1em; font-weight: bold; }
         
         .controles { display: flex; align-items: center; background: var(--fondo-controles); border-radius: 12px; padding: 5px; }
-        .btn-mas { background: transparent; color: var(--naranja); border: none; width: 35px; height: 35px; font-size: 1.3em; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .controles b { width: 25px; text-align: center; font-weight: normal; font-size: 1.1em; color: var(--oscuro); }
+        .btn-mas { background: transparent; color: var(--naranja); border: none; width: 35px; height: 35px; font-size: 1.3em; cursor: pointer; font-weight: bold; }
 
         .resumen { background: #fff9f2; border: 1.5px dashed var(--naranja); padding: 20px; border-radius: 20px; margin-top: 20px; }
-        .resumen input { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .resumen input, .resumen textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-family: inherit; }
         
-        /* Estilo para el cálculo del total */
-        .area-total {
-            text-align: center;
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-        }
+        .area-total { text-align: center; margin-top: 20px; padding: 15px; background: #fff; border-radius: 15px; }
         .total-monto { font-size: 1.4em; color: var(--oscuro); font-weight: bold; }
-        .advertencia-total { color: var(--rojo); font-size: 0.8em; margin-top: 5px; font-weight: bold; }
 
-        .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .status-badge { display: inline-block; padding: 10px 25px; border-radius: 25px; font-weight: bold; margin-top: 15px; color: white; text-transform: uppercase; }
-        .status-NUEVO { background: var(--azul); }
-        .status-EN_CAMINO { background: var(--naranja); }
-        .status-ENTREGADO { background: var(--verde); }
-        .status-RECHAZADO { background: var(--rojo); }
-
-        .selector-vistas { text-align: right; margin-bottom: 10px; }
-        .btn-cambio { font-size: 0.75em; background: #eee; border: 1px solid #ccc; padding: 6px 12px; border-radius: 12px; cursor: pointer; font-weight: bold; color: var(--oscuro); }
+        .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-pedir:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-<div id="modalPermisos" class="hidden">
-    <div class="modal-content">
-        <h3>📍 Ubicación Necesaria</h3>
-        <p style="font-size: 0.9em; color: gray;">Debes activar tu GPS para que el repartidor pueda trazar la ruta hacia tu ubicación.</p>
-        <button class="btn-pedir" onclick="activarTodo()">ACTIVAR GPS</button>
-    </div>
-</div>
-
 <div class="card">
-    <div id="controlesAdmin" class="selector-vistas hidden">
-        <button id="btnSwitchView" class="btn-cambio" onclick="toggleModoManual()">🔄 Cambiar a Modo Cliente</button>
-    </div>
-
-    <div id="statusHorario" class="horario-tag">Cargando...</div>
+    <div id="statusHorario" class="horario-tag">Cargando estado...</div>
     <h2>Antojitos Pueblo Nuevo 🍔</h2>
     
     <div id="vistaPedido">
+        <div id="indicadorGPS" class="status-gps gps-buscando">
+            <span id="puntoGps" class="dot dot-rojo"></span>
+            <span id="textoGps">Buscando señal GPS...</span>
+        </div>
+
         <div id="contenedorMenu">Cargando menú...</div>
         
         <div class="resumen">
-            <input type="text" id="nombreCli" placeholder="Tu nombre" required>
-            <input type="tel" id="telCli" placeholder="Tu número de celular (WhatsApp)" required>
-            <input type="text" id="dirCli" placeholder="Dirección exacta o punto de referencia" required>
-            <p style="font-size: 0.85em; color: var(--oscuro); text-align: center; margin: 10px 0 0 0;">
-                ℹ️ El repartidor va a cotizar el costo de envío y te lo enviará a tu WhatsApp una vez procesado el pedido.
-            </p>
+            <input type="text" id="nombreCli" placeholder="Tu nombre">
+            <input type="tel" id="telCli" placeholder="WhatsApp (ej: 88888888)">
+            <textarea id="dirCli" placeholder="Dirección exacta o punto de referencia" rows="2"></textarea>
         </div>
 
         <div class="area-total">
-            <div class="total-monto">Total Productos: <span id="sumaTotal">C$ 0</span></div>
-            <div class="advertencia-total">⚠️ Por favor, revisa que tu orden sea correcta antes de enviar.</div>
-            <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()">🚀 ENVIAR PEDIDO</button>
+            <div class="total-monto">Total: <span id="sumaTotal">C$ 0</span></div>
+            <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()" disabled>🚀 ESPERANDO GPS...</button>
         </div>
-        
-        <p style="text-align:center; font-size:0.8em; margin-top:15px;">
-            <a href="#" onclick="mostrarRegistroRep()" style="color:var(--oscuro)">¿Quieres ser repartidor? Regístrate</a>
-        </p>
     </div>
 
-    <div id="vistaRegistroRep" class="hidden">
-        <h3>🤝 Únete al equipo</h3>
-        <div class="resumen">
-            <input type="text" id="repNombre" placeholder="Tu nombre completo">
-            <input type="tel" id="repTel" placeholder="Número de celular (WhatsApp)">
-            <label style="font-size:0.85em; display:block; margin-top:10px;">
-                <input type="checkbox" id="repComision"> Acepto compartir el <span id="comisionDinamica" style="font-weight:bold;">12%</span> de comisión solicitada por el administrador.
-            </label>
-        </div>
-        <button class="btn-pedir" onclick="registrarRepartidor()" style="background:#6bc97c;">ENVIAR SOLICITUD</button>
-        <button onclick="volverAlMenu()" style="background:none; border:none; color:gray; width:100%; margin-top:15px; cursor:pointer;">Volver</button>
-    </div>
-
-    <div id="pantallaEstado" class="hidden" style="text-align:center;">
-        <h3 id="msgEstado">Procesando...</h3>
-        <div id="badgeEstado" class="status-badge status-NUEVO">NUEVO</div>
-        <button class="btn-pedir" style="background:var(--oscuro); margin-top:30px;" onclick="location.reload()">NUEVO PEDIDO</button>
-    </div>
-
-    <div id="vistaPanelRepartidor" class="hidden">
-        <div style="background:var(--oscuro); color:white; padding:15px; border-radius:15px; margin-bottom:15px;">
-            <h4 id="saludoRep" style="margin:0;">Panel Repartidor</h4>
-            <small id="statusDispo">Estado: Disponible</small>
-        </div>
-        <div id="listaPedidosPendientes">Buscando entregas...</div>
+    <div id="pantallaEstado" class="hidden" style="text-align:center; padding: 40px 10px;">
+        <h3 id="msgEstado">¡Pedido Enviado! 🚀</h3>
+        <p>El repartidor te contactará pronto.</p>
+        <button class="btn-pedir" style="background:var(--oscuro);" onclick="location.reload()">NUEVO PEDIDO</button>
     </div>
 </div>
 
@@ -159,72 +92,56 @@
     const db = firebase.firestore();
     
     let carrito = {}; 
-    let configLog = { abierto: false };
-    let coordsCliente = null;
-    let porcentajeComisionActual = 12; 
-    let modoManualActual = localStorage.getItem('modo_vista') || "CLIENTE";
     let subtotalGlobal = 0;
+    let coordsCliente = null;
+    let tiendaAbierta = false;
 
     window.onload = () => {
-        document.getElementById('nombreCli').value = localStorage.getItem('antojitos_nombre') || "";
-        document.getElementById('telCli').value = localStorage.getItem('antojitos_tel') || "";
-        document.getElementById('dirCli').value = localStorage.getItem('antojitos_dir') || "";
-        
-        const repId = localStorage.getItem('repartidor_id');
-        if (repId) {
-            db.collection("usuarios").doc(repId).onSnapshot(doc => {
-                if (doc.exists && doc.data().aprobado) {
-                    document.getElementById('controlesAdmin').classList.remove('hidden');
-                    actualizarInterfazSegunModo(doc.data());
-                }
-            });
-        }
-
-        if (localStorage.getItem('antojitos_permisos') !== 'true') {
-            document.getElementById('modalPermisos').classList.remove('hidden');
-        } else { obtenerGPS(); }
+        obtenerGPS();
         cargarConfig();
+        // Cargar datos previos
+        document.getElementById('nombreCli').value = localStorage.getItem('ant_nom') || "";
+        document.getElementById('telCli').value = localStorage.getItem('ant_tel') || "";
     };
 
-    function actualizarInterfazSegunModo(userData) {
-        const vistaPedido = document.getElementById('vistaPedido');
-        const vistaRepartidor = document.getElementById('vistaPanelRepartidor');
-        const btnSwitch = document.getElementById('btnSwitchView');
-
-        if (modoManualActual === "REPARTIDOR") {
-            vistaPedido.classList.add('hidden');
-            vistaRepartidor.classList.remove('hidden');
-            btnSwitch.innerText = "🛒 Cambiar a Modo Cliente";
-            document.getElementById('saludoRep').innerText = "Hola, " + userData.nombre;
-            document.getElementById('statusDispo').innerText = "Estado: " + (userData.disponible ? "Disponible ✅" : "Ocupado 📦");
-            cargarPedidosParaRepartidor();
-        } else {
-            vistaPedido.classList.remove('hidden');
-            vistaRepartidor.classList.add('hidden');
-            btnSwitch.innerText = "📦 Cambiar a Modo Repartidor";
-        }
-    }
-
-    function toggleModoManual() {
-        modoManualActual = (modoManualActual === "REPARTIDOR") ? "CLIENTE" : "REPARTIDOR";
-        localStorage.setItem('modo_vista', modoManualActual);
-        location.reload();
-    }
-
     function obtenerGPS() {
-        navigator.geolocation.getCurrentPosition(
-            pos => { coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
-            err => { alert("Por favor, permite el acceso a tu ubicación."); }
-        );
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(
+                pos => {
+                    coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    const caja = document.getElementById('indicadorGPS');
+                    const punto = document.getElementById('puntoGps');
+                    const texto = document.getElementById('textoGps');
+                    const btn = document.getElementById('btnPedirFinal');
+
+                    caja.className = "status-gps gps-listo";
+                    punto.className = "dot dot-verde";
+                    texto.innerText = "📍 UBICACIÓN FIJADA";
+                    
+                    if(tiendaAbierta) {
+                        btn.disabled = false;
+                        btn.innerText = "🚀 ENVIAR PEDIDO";
+                    }
+                },
+                err => { console.error("Error GPS:", err); },
+                { enableHighAccuracy: true }
+            );
+        }
     }
 
     function cargarConfig() { 
         db.collection("configuracion").doc("global").onSnapshot(doc => { 
             if(doc.exists) {
-                const d = doc.data();
-                configLog.abierto = d.abierto;
-                document.getElementById('statusHorario').innerText = d.abierto ? "🟢 ABIERTO" : "🔴 CERRADO";
-                document.getElementById('btnPedirFinal').disabled = !d.abierto;
+                tiendaAbierta = doc.data().abierto;
+                const tag = document.getElementById('statusHorario');
+                tag.innerText = tiendaAbierta ? "🟢 ABIERTO AHORA" : "🔴 CERRADO TEMPORALMENTE";
+                tag.className = "horario-tag " + (tiendaAbierta ? "abierto" : "cerrado");
+                
+                if(!tiendaAbierta) {
+                    const btn = document.getElementById('btnPedirFinal');
+                    btn.disabled = true;
+                    btn.innerText = "TIENDA CERRADA";
+                }
             }
         }); 
     }
@@ -234,13 +151,11 @@
         snap.forEach(doc => {
             const m = doc.data(); if(!m.disponible) return;
             const q = carrito[doc.id] ? carrito[doc.id].qty : 0;
-            const local = m.distribuidor || "Antojitos Pueblo Nuevo";
-
             html += `
             <div class="contenedor-producto">
-                <div class="distribuidor-header">🏠 ${local.toUpperCase()}</div>
+                <div class="distribuidor-header">🏠 ${m.distribuidor || 'ANTOJITOS'}</div>
                 <div class="item-comida">
-                    <div class="info"><b>${m.nombre}</b><span>C$ ${m.precio}</span></div>
+                    <div class="info"><b>${m.nombre.toUpperCase()}</b><span>C$ ${m.precio}</span></div>
                     <div class="controles">
                         <button class="btn-mas" onclick="modificar('${doc.id}',-1,${m.precio},'${m.nombre}')">-</button>
                         <b id="q-${doc.id}">${q}</b>
@@ -250,17 +165,16 @@
             </div>`;
         });
         document.getElementById('contenedorMenu').innerHTML = html;
-        actualizarSumaTotal();
     });
 
     function modificar(id, q, p, n) {
         if(!carrito[id]) carrito[id] = {qty:0, precio:p, nombre:n};
         carrito[id].qty += q; if(carrito[id].qty < 0) carrito[id].qty = 0;
         document.getElementById('q-'+id).innerText = carrito[id].qty;
-        actualizarSumaTotal();
+        actualizarTotal();
     }
 
-    function actualizarSumaTotal() {
+    function actualizarTotal() {
         subtotalGlobal = 0;
         for(let k in carrito) { subtotalGlobal += (carrito[k].qty * carrito[k].precio); }
         document.getElementById('sumaTotal').innerText = "C$ " + subtotalGlobal;
@@ -271,87 +185,38 @@
         const tel = document.getElementById('telCli').value;
         const dir = document.getElementById('dirCli').value;
         
-        if(!nom || !tel || !dir) return alert("Por favor, llena tus datos de contacto.");
-        if(subtotalGlobal === 0) return alert("Agrega al menos un producto al carrito.");
-        if(!coordsCliente) return alert("Activa tu GPS para enviar el pedido.");
+        if(!nom || !tel || !dir) return alert("Por favor, llena tus datos.");
+        if(subtotalGlobal === 0) return alert("El carrito está vacío.");
+        if(!coordsCliente) return alert("Aún buscando tu GPS...");
 
-        localStorage.setItem('antojitos_nombre', nom);
-        localStorage.setItem('antojitos_tel', tel);
-        localStorage.setItem('antojitos_dir', dir);
+        localStorage.setItem('ant_nom', nom);
+        localStorage.setItem('ant_tel', tel);
 
-        let items = []; let msgTxt = "";
+        let itemsArr = [];
         for(let k in carrito) {
-            if(carrito[k].qty > 0) {
-                items.push(carrito[k]);
-                msgTxt += `- ${carrito[k].qty}x ${carrito[k].nombre} (C$ ${carrito[k].precio * carrito[k].qty})\n`;
-            }
+            if(carrito[k].qty > 0) itemsArr.push(`${carrito[k].qty}x ${carrito[k].nombre}`);
         }
 
-        const pedido = { cliente:nom, telefono:tel, ubicacion:dir, items, total_comida:subtotalGlobal, estado:"NUEVO", fecha:new Date(), coords:coordsCliente };
-        const docRef = await db.collection("pedidos").add(pedido);
+        const pedido = { 
+            cliente: nom, 
+            telefono: tel, 
+            ubicacion: dir, 
+            pedido: itemsArr, 
+            total: subtotalGlobal, // Sincronizado con el Panel Admin
+            estado: "NUEVO", 
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            coords: coordsCliente 
+        };
 
-        const reps = await db.collection("usuarios").where("rol","==","REPARTIDOR").where("aprobado","==",true).where("disponible","==",true).get();
-        let tels = []; reps.forEach(r => tels.push(r.data().telefono));
-        let telFin = tels.length > 0 ? tels[Math.floor(Math.random()*tels.length)] : "50588888888";
-
-        const urlRuta = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
-
-        const msg = encodeURIComponent(`🚨 *NUEVO PEDIDO*\n\n` +
-            `👤 *Cliente:* ${nom}\n` +
-            `📱 *WhatsApp:* ${tel}\n` +
-            `📍 *Referencia:* ${dir}\n\n` +
-            `🛒 *PRODUCTOS:*\n${msgTxt}\n` +
-            `💰 *SUBTOTAL PRODUCTOS:* C$ ${subtotalGlobal}\n\n` +
-            `📍 *RUTA AL CLIENTE:*\n${urlRuta}\n\n` +
-            `⚠️ *IMPORTANTE:* Contactar al cliente para cotizar costo de envío según su distancia.`);
-        
-        window.open(`https://wa.me/${telFin}?text=${msg}`, '_blank');
-        
-        document.getElementById('vistaPedido').classList.add('hidden');
-        document.getElementById('pantallaEstado').classList.remove('hidden');
-        verificarEstado(docRef.id);
-    }
-
-    // Funciones adicionales de repartidor y registro...
-    function mostrarRegistroRep() {
-        document.getElementById('vistaPedido').classList.add('hidden');
-        document.getElementById('vistaRegistroRep').classList.remove('hidden');
-    }
-    function volverAlMenu() {
-        document.getElementById('vistaRegistroRep').classList.add('hidden');
-        document.getElementById('vistaPedido').classList.remove('hidden');
-    }
-    function verificarEstado(id) {
-        db.collection("pedidos").doc(id).onSnapshot(doc => {
-            const p = doc.data();
-            document.getElementById('badgeEstado').innerText = p.estado;
-            document.getElementById('badgeEstado').className = `status-badge status-${p.estado.replace(" ","_")}`;
-            if(p.estado === "EN CAMINO") document.getElementById('msgEstado').innerText = "¡En camino! 🚚";
-            if(p.estado === "ENTREGADO") document.getElementById('msgEstado').innerText = "¡Entregado! 🎉";
-        });
-    }
-    function cargarPedidosParaRepartidor() {
-        db.collection("pedidos").where("estado","in",["NUEVO","EN CAMINO"]).onSnapshot(snap => {
-            let html = "";
-            snap.forEach(doc => {
-                const p = doc.data();
-                const esNuevo = p.estado === "NUEVO";
-                html += `<div class="resumen" style="border-style:solid; padding: 15px;">
-                    <b>${p.cliente}</b><br><small>📍 ${p.ubicacion}</small><br>
-                    <b style="color:var(--naranja);">Subtotal: C$ ${p.total_comida}</b><br>
-                    <button class="btn-pedir" onclick="actPed('${doc.id}','${esNuevo?'EN CAMINO':'ENTREGADO'}')">
-                        ${esNuevo ? 'ACEPTAR PEDIDO' : 'MARCAR ENTREGADO'}
-                    </button>
-                </div>`;
-            });
-            document.getElementById('listaPedidosPendientes').innerHTML = html || "<p>Sin pedidos.</p>";
-        });
-    }
-    async function actPed(id, est) {
-        const repId = localStorage.getItem('repartidor_id');
-        await db.collection("pedidos").doc(id).update({estado: est, repartidorId: repId});
-        if(est === 'EN CAMINO') await db.collection("usuarios").doc(repId).update({disponible: false});
-        if(est === 'ENTREGADO') await db.collection("usuarios").doc(repId).update({disponible: true});
+        try {
+            await db.collection("pedidos").add(pedido);
+            document.getElementById('vistaPedido').classList.add('hidden');
+            document.getElementById('pantallaEstado').classList.remove('hidden');
+            
+            // Abrir WhatsApp con resumen
+            const msg = encodeURIComponent(`🍔 *NUEVO PEDIDO*\nCliente: ${nom}\nTotal: C$ ${subtotalGlobal}\nUbicación GPS: https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`);
+            window.open(`https://wa.me/50588888888?text=${msg}`, '_blank');
+        } catch(e) { alert("Error al enviar."); }
     }
 </script>
 </body>
