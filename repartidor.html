@@ -71,7 +71,11 @@
     };
 
     function verificarSesion() {
-        if (!miId) { location.reload(); return; } 
+        if (!miId) { 
+            document.getElementById('pantallaPrincipal').classList.remove('hidden');
+            document.getElementById('listaPedidos').innerHTML = "<div class='card'><h4 style='color:var(--rojo); text-align:center;'>⚠️ No has iniciado sesión</h4><p style='text-align:center;'>Para recibir pedidos, tu cuenta debe ser activada o debes iniciar sesión desde la aplicación principal.</p></div>";
+            return; 
+        } 
         
         db.collection("usuarios").doc(miId).onSnapshot(doc => {
             if (doc.exists) {
@@ -91,6 +95,7 @@
           .onSnapshot(snap => {
             let html = "";
             let container = document.getElementById('listaPedidos');
+            let tengoPedidoEnCamino = false; // Variable para saber si de verdad tenemos un pedido
 
             snap.forEach(doc => {
                 const p = doc.data();
@@ -99,8 +104,10 @@
                 if(pedidosRechazados.includes(idDoc)) return;
 
                 if(p.repartidor_id === miId && p.estado === "EN CAMINO") {
+                    tengoPedidoEnCamino = true; // Confirmamos que sí hay un pedido activo
                     let botonMaps = "";
                     if (p.geolocalizacion) {
+                        // Enlace corregido a la API oficial de direcciones de Google Maps
                         const urlMaps = `https://www.google.com/maps/dir/?api=1&destination=${p.geolocalizacion.lat},${p.geolocalizacion.lng}&travelmode=driving`;
                         botonMaps = `
                             <a href="${urlMaps}" target="_blank" class="btn btn-maps">
@@ -130,6 +137,12 @@
                 }
             });
 
+            // AUTOCORRECCIÓN: Si el sistema dice que estás ocupado pero NO hay pedido, te libera.
+            if (miEstado === "OCUPADO" && !tengoPedidoEnCamino && miId) {
+                miEstado = "DISPONIBLE";
+                db.collection("usuarios").doc(miId).update({ estado_reparto: "DISPONIBLE" }).catch(e => console.log(e));
+            }
+
             container.innerHTML = html || `<p style='text-align:center; color:gray; padding:20px;'>${miEstado === 'OCUPADO' ? 'Termina tu pedido actual para ver más.' : 'No hay pedidos nuevos por ahora...'}</p>`;
         });
     }
@@ -148,14 +161,12 @@
     async function finalizarPedido(id) {
         if(confirm("¿Confirmas que ya entregaste el pedido?")) {
             try {
-                // CORRECCIÓN: Resetear el estado local inmediatamente antes de la DB
                 miEstado = "DISPONIBLE"; 
                 document.getElementById('listaPedidos').innerHTML = "Actualizando...";
 
                 await db.collection("usuarios").doc(miId).update({ estado_reparto: "DISPONIBLE" });
                 await db.collection("pedidos").doc(id).update({ estado: "ENTREGADO" });
                 
-                // Forzar re-escucha para asegurar que la vista sea 'DISPONIBLE'
                 escucharPedidos(); 
             } catch(e) { alert("Error al finalizar: " + e.message); }
         }
@@ -215,3 +226,4 @@
 </script>
 </body>
 </html>
+
