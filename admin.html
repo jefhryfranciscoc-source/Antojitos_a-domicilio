@@ -24,11 +24,9 @@
         .pedido-card.EN\ CAMINO { border-left-color: var(--naranja); }
         .pedido-card.ENTREGADO { border-left-color: var(--verde); }
 
-        .btn-acc { background: var(--verde); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; }
-        .btn-borrar { background: var(--rojo); color: white; border: none; padding: 8px; border-radius: 6px; cursor: pointer; }
+        .btn-acc { background: var(--verde); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-borrar { background: var(--rojo); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
         
-        .ajuste-section { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; border: 1px solid #eee; }
-        .ajuste-section h3 { margin-top: 0; font-size: 1em; color: var(--oscuro); border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .input-group { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; }
         .input-group label { flex: 1; font-size: 0.9em; font-weight: 600; }
         .input-group input { flex: 1.6; padding: 10px; border: 1px solid #ddd; border-radius: 8px; text-align: center; }
@@ -72,7 +70,7 @@
 </div>
 
 <div id="ajustes" class="tab-content">
-    <div class="ajuste-section">
+    <div class="card">
         <h3>🏪 Operación</h3>
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <span>Estado del Local: <b id="estadoTexto">...</b></span>
@@ -83,11 +81,11 @@
         </div>
     </div>
 
-    <div class="ajuste-section">
+    <div class="card">
         <h3>💰 Finanzas y Logística</h3>
         <div class="input-group">
-            <label>Mi Comisión (%)</label>
-            <input type="number" id="confComision" placeholder="6">
+            <label>Comisión Repartos (%)</label>
+            <input type="number" id="confComision" placeholder="15">
         </div>
         <div class="input-group">
             <label>Envío Base (C$)</label>
@@ -97,10 +95,8 @@
             <label>Precio por Km (C$)</label>
             <input type="number" id="confPrecioKm" placeholder="15">
         </div>
-        <small style="color:gray;">* El envío se calcula: Base + (Distancia * Precio por Km).</small>
+        <button onclick="guardarAjustesRapido()" class="btn-save" style="margin-top:10px;">GUARDAR AJUSTES</button>
     </div>
-
-    <button onclick="guardarAjustesRapido()" class="btn-save">GUARDAR TODO</button>
 </div>
 
 <script>
@@ -121,7 +117,7 @@
         db.collection("configuracion").doc("global").onSnapshot(doc => {
             if(doc.exists) {
                 const d = doc.data();
-                document.getElementById('confComision').value = d.comision || 6;
+                document.getElementById('confComision').value = d.comision || 15;
                 document.getElementById('confMinimo').value = d.precio_minimo || 15;
                 document.getElementById('confPrecioKm').value = d.precio_km || 15;
                 document.getElementById('toggleAbierto').checked = d.abierto || false;
@@ -138,7 +134,7 @@
             precio_km: parseFloat(document.getElementById('confPrecioKm').value),
             abierto: document.getElementById('toggleAbierto').checked
         }, { merge: true });
-        alert("Configuración actualizada correctamente.");
+        alert("Ajustes guardados.");
     }
 
     function escucharPedidos() {
@@ -153,12 +149,11 @@
                             <b>👤 ${p.cliente}</b>
                             <span style="color:var(--verde); font-weight:bold;">C$ ${p.total}</span>
                         </div>
-                        <div style="font-size:0.85em; margin:5px 0;">${p.pedido.join(", ")}</div>
+                        <div style="font-size:0.85em; margin:5px 0;">📦 ${p.pedido.join(", ")}</div>
                         <div style="font-size:0.8em; color:gray;">📍 ${p.ubicacion}</div>
-                        <div style="font-size:0.8em; color:var(--azul);">📏 Distancia: ${p.distancia_km || '0'} km</div>
-                        <div style="font-size:0.8em; margin-top:5px;">🛵 Repartidor: <b>${p.repartidorNombre || 'Pendiente'}</b></div>
+                        <div style="font-size:0.8em; margin-top:5px;">🛵 Repartidor: <b style="color:var(--naranja)">${p.repartidorNombre || 'Pendiente...'}</b></div>
                         <div style="margin-top:10px; display:flex; gap:10px;">
-                            <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar</button>
+                            <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar Orden</button>
                         </div>
                     </div>`;
             });
@@ -175,8 +170,7 @@
                     <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
                         <div>
                             <b style="text-transform:uppercase;">${m.nombre}</b><br>
-                            <small>C$ ${m.precio} | ${m.distribuidor}</small><br>
-                            <small style="color:gray; font-size:0.75em;">📍 GPS: ${m.latitud}, ${m.longitud}</small>
+                            <small>C$ ${m.precio} | ${m.distribuidor}</small>
                         </div>
                         <div>
                             <button onclick="gestionarPlato('${doc.id}','${m.nombre}',${m.precio},'${m.distribuidor}',${m.latitud},${m.longitud})">📝</button>
@@ -188,36 +182,43 @@
     }
 
     function escucharRepartidores() {
-        db.collection("usuarios").where("rol", "in", ["POSTULANTE", "REPARTIDOR"]).onSnapshot(snap => {
+        // CORRECCIÓN: Buscamos cualquier usuario que no sea cliente para gestionar el equipo
+        db.collection("usuarios").where("rol", "in", ["REPARTIDOR", "POSTULANTE"]).onSnapshot(snap => {
             const cont = document.getElementById('listaRepartidores');
             cont.innerHTML = "";
             snap.forEach(doc => {
                 const u = doc.data();
-                const esRep = u.rol === "REPARTIDOR";
+                // Validamos nombre para evitar el undefined
+                const nombreMostrar = u.nombre || u.usuario || "Sin Nombre";
+                const esActivo = u.rol === "REPARTIDOR" && u.aprobado === true;
+
                 cont.innerHTML += `
-                    <div class="card" style="display:flex; justify-content:space-between; align-items:center; border-left: 4px solid ${esRep ? 'var(--verde)' : 'var(--azul)'}">
+                    <div class="card" style="display:flex; justify-content:space-between; align-items:center; border-left: 5px solid ${esActivo ? 'var(--verde)' : 'var(--azul)'}">
                         <div>
-                            <b>${u.nombre}</b> (@${u.usuario})<br>
-                            <small>📞 ${u.telefono}</small>
+                            <b>${nombreMostrar}</b><br>
+                            <small>📞 ${u.telefono || 'Sin tel'}</small><br>
+                            <small style="color:gray;">Estado: ${u.estado_reparto || '---'}</small>
                         </div>
-                        <div>
-                            ${!esRep ? `<button class="btn-acc" onclick="aprobarRepartidor('${doc.id}')">APROBAR</button>` : `<span style="color:green; font-weight:bold;">ACTIVO</span>`}
-                            <button class="btn-borrar" style="padding:5px 10px;" onclick="eliminarUsuario('${doc.id}')">X</button>
+                        <div style="display:flex; flex-direction:column; gap:5px;">
+                            ${!esActivo ? 
+                                `<button class="btn-acc" onclick="aprobarRepartidor('${doc.id}')">APROBAR</button>` : 
+                                `<span style="color:var(--verde); font-weight:bold; text-align:center; font-size:0.8em;">ACTIVO ✅</span>`
+                            }
+                            <button class="btn-borrar" style="padding:4px; font-size:0.7em;" onclick="eliminarUsuario('${doc.id}')">ELIMINAR</button>
                         </div>
                     </div>`;
             });
         });
     }
 
-    // FUNCIÓN ACTUALIZADA CON COORDENADAS POR PLATILLO
     async function gestionarPlato(id=null, n='', p='', d='Antojitos', lat='', lng='') {
         const nom = prompt("Nombre del producto:", n);
         const pre = prompt("Precio (C$):", p);
         const dis = prompt("Local que lo vende:", d);
-        const latLocal = prompt("Latitud de Google Maps del Local:", lat || "13.486");
-        const lngLocal = prompt("Longitud de Google Maps del Local:", lng || "-86.481");
+        const latLocal = prompt("Latitud GPS del Local:", lat || "13.486");
+        const lngLocal = prompt("Longitud GPS del Local:", lng || "-86.481");
 
-        if(nom && pre && latLocal && lngLocal) {
+        if(nom && pre) {
             const data = { 
                 nombre: nom.toLowerCase(), 
                 precio: parseFloat(pre), 
@@ -228,22 +229,28 @@
             };
             if(id) await db.collection("menu").doc(id).update(data);
             else await db.collection("menu").add(data);
-            alert("¡Platillo guardado correctamente!");
         }
     }
 
     async function aprobarRepartidor(id) {
-        if(confirm("¿Aprobar este repartidor para que empiece a trabajar?")) {
-            await db.collection("usuarios").doc(id).update({ rol: "REPARTIDOR" });
+        if(confirm("¿Quieres activar a este repartidor? Podrá ver y aceptar pedidos de inmediato.")) {
+            try {
+                await db.collection("usuarios").doc(id).update({ 
+                    rol: "REPARTIDOR",
+                    aprobado: true,
+                    estado_reparto: "DISPONIBLE"
+                });
+                alert("¡Repartidor activado!");
+            } catch(e) { alert("Error al aprobar."); }
         }
     }
 
     async function eliminarPedido(id) { if(confirm("¿Borrar orden?")) await db.collection("pedidos").doc(id).delete(); }
     async function eliminarPlato(id) { if(confirm("¿Borrar del menú?")) await db.collection("menu").doc(id).delete(); }
-    async function eliminarUsuario(id) { if(confirm("¿Eliminar este usuario?")) await db.collection("usuarios").doc(id).delete(); }
+    async function eliminarUsuario(id) { if(confirm("¿Eliminar este usuario del sistema?")) await db.collection("usuarios").doc(id).delete(); }
 
     async function limpiarEntregados() {
-        if(confirm("Se borrarán todas las órdenes marcadas como ENTREGADO. ¿Continuar?")) {
+        if(confirm("Se borrarán todas las órdenes ENTREGADAS. ¿Continuar?")) {
             const snap = await db.collection("pedidos").where("estado","==","ENTREGADO").get();
             snap.forEach(doc => doc.ref.delete());
         }
@@ -258,3 +265,4 @@
 </script>
 </body>
 </html>
+
