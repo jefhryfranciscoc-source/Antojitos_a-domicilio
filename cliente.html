@@ -13,8 +13,12 @@
         
         .card { background: white; padding: 10px 20px 25px 20px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
         
-        /* Semáforo GPS */
-        .status-gps { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; margin-bottom: 15px; border-radius: 15px; font-weight: bold; font-size: 0.9em; transition: 0.3s; }
+        .horario-tag { display: block; text-align: center; font-size: 0.75em; padding: 5px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
+        .abierto { background: #e8f5e9; color: #2e7d32; }
+        .cerrado { background: #ffebee; color: #c62828; }
+        h2 { color: var(--naranja); text-align: center; margin-bottom: 5px; }
+        
+        .status-gps { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; margin-bottom: 15px; border-radius: 15px; font-weight: bold; font-size: 0.9em; }
         .gps-buscando { background: #ffeaa7; color: #d35400; border: 1px solid #f1c40f; }
         .gps-listo { background: #d1fad7; color: #27ae60; border: 1px solid #2ecc71; }
         .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
@@ -22,12 +26,8 @@
         .dot-verde { background-color: #2ecc71; }
         @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
 
-        .horario-tag { display: block; text-align: center; font-size: 0.75em; padding: 5px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
-        h2 { color: var(--naranja); text-align: center; margin-bottom: 5px; }
-        
         .contenedor-producto { background: white; border-radius: 18px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; overflow: hidden; }
         .distribuidor-header { background: var(--oscuro); color: white; padding: 8px 15px; font-weight: bold; font-size: 0.85em; text-transform: uppercase; }
-
         .item-comida { padding: 15px; display: flex; align-items: center; }
         .info { flex: 1; }
         .info b { display: block; color: var(--oscuro); font-size: 1.05em; }
@@ -37,13 +37,16 @@
         .btn-mas { background: transparent; color: var(--naranja); border: none; width: 35px; height: 35px; font-size: 1.3em; cursor: pointer; font-weight: bold; }
 
         .resumen { background: #fff9f2; border: 1.5px dashed var(--naranja); padding: 20px; border-radius: 20px; margin-top: 20px; }
-        .resumen input, .resumen textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-family: inherit; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
         
         .area-total { text-align: center; margin-top: 20px; padding: 15px; background: #fff; border-radius: 15px; }
-        .total-monto { font-size: 1.4em; color: var(--oscuro); font-weight: bold; }
+        .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-pedir:disabled { background: #ccc; }
 
-        .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
-        .btn-pedir:disabled { background: #ccc; cursor: not-allowed; }
+        /* Estilos Registro */
+        .reglas-box { background: #f9f9f9; padding: 15px; border-radius: 10px; font-size: 0.85em; max-height: 150px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #eee; }
+        .footer-recluta { display: block; text-align: center; margin-top: 20px; font-size: 0.8em; color: var(--azul); text-decoration: underline; cursor: pointer; }
+        .msg-ya-rep { text-align: center; color: var(--verde); font-size: 0.85em; margin-top: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -67,15 +70,39 @@
         </div>
 
         <div class="area-total">
-            <div class="total-monto">Total: <span id="sumaTotal">C$ 0</span></div>
+            <div style="font-size: 1.4em; font-weight: bold;">Total: <span id="sumaTotal">C$ 0</span></div>
             <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()" disabled>🚀 ESPERANDO GPS...</button>
+        </div>
+
+        <div id="seccionReclutamiento">
+            <a class="footer-recluta" onclick="mostrarRegistro()">¿Quieres ser repartidor? Regístrate aquí</a>
         </div>
     </div>
 
+    <div id="vistaRegistro" class="hidden">
+        <h3 style="text-align:center;">Únete al Equipo 📦</h3>
+        <p style="font-size: 0.9em; color: #666;">Completa tus datos para postularte como repartidor oficial.</p>
+        
+        <input type="text" id="regNombre" placeholder="Nombre completo">
+        <input type="tel" id="regTel" placeholder="Número de WhatsApp">
+        
+        <div class="reglas-box" id="cajaReglas">Cargando reglas...</div>
+        
+        <div style="background: #e8f4fd; padding: 10px; border-radius: 10px; margin-bottom: 15px;">
+            <label style="font-size: 0.85em; display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="checkGanancia" required> 
+                Acepto dar el <b id="porcentajeTxt">0%</b> de ganancia al administrador.
+            </label>
+        </div>
+
+        <button class="btn-pedir" onclick="registrarRepartidor()">ENVIAR POSTULACIÓN</button>
+        <button class="btn-pedir" style="background: #999; margin-top: 5px;" onclick="cancelarRegistro()">VOLVER</button>
+    </div>
+
     <div id="pantallaEstado" class="hidden" style="text-align:center; padding: 40px 10px;">
-        <h3 id="msgEstado">¡Pedido Enviado! 🚀</h3>
-        <p>El repartidor te contactará pronto.</p>
-        <button class="btn-pedir" style="background:var(--oscuro);" onclick="location.reload()">NUEVO PEDIDO</button>
+        <h3>¡Pedido Enviado! 🚀</h3>
+        <p>Se ha notificado a un repartidor disponible.</p>
+        <button class="btn-pedir" onclick="location.reload()">NUEVO PEDIDO</button>
     </div>
 </div>
 
@@ -95,55 +122,55 @@
     let subtotalGlobal = 0;
     let coordsCliente = null;
     let tiendaAbierta = false;
+    
+    // Variables para el envío
+    let precioBaseGlobal = 0;
+    let precioKmGlobal = 0;
 
     window.onload = () => {
         obtenerGPS();
         cargarConfig();
-        // Cargar datos previos
+        verificarSiEsRepartidor();
         document.getElementById('nombreCli').value = localStorage.getItem('ant_nom') || "";
         document.getElementById('telCli').value = localStorage.getItem('ant_tel') || "";
     };
 
-    function obtenerGPS() {
-        if (navigator.geolocation) {
-            navigator.geolocation.watchPosition(
-                pos => {
-                    coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    const caja = document.getElementById('indicadorGPS');
-                    const punto = document.getElementById('puntoGps');
-                    const texto = document.getElementById('textoGps');
-                    const btn = document.getElementById('btnPedirFinal');
-
-                    caja.className = "status-gps gps-listo";
-                    punto.className = "dot dot-verde";
-                    texto.innerText = "📍 UBICACIÓN FIJADA";
-                    
-                    if(tiendaAbierta) {
-                        btn.disabled = false;
-                        btn.innerText = "🚀 ENVIAR PEDIDO";
-                    }
-                },
-                err => { console.error("Error GPS:", err); },
-                { enableHighAccuracy: true }
-            );
+    function verificarSiEsRepartidor() {
+        if(localStorage.getItem('soyRepartidor')) {
+            document.getElementById('seccionReclutamiento').innerHTML = 
+                `<div class="msg-ya-rep">✅ Ya eres un repartidor registrado. <br>Mantente atento a los pedidos por WhatsApp.</div>`;
         }
     }
 
     function cargarConfig() { 
         db.collection("configuracion").doc("global").onSnapshot(doc => { 
             if(doc.exists) {
-                tiendaAbierta = doc.data().abierto;
-                const tag = document.getElementById('statusHorario');
-                tag.innerText = tiendaAbierta ? "🟢 ABIERTO AHORA" : "🔴 CERRADO TEMPORALMENTE";
-                tag.className = "horario-tag " + (tiendaAbierta ? "abierto" : "cerrado");
+                const data = doc.data();
+                tiendaAbierta = data.abierto;
+                document.getElementById('statusHorario').innerText = tiendaAbierta ? "🟢 ABIERTO" : "🔴 CERRADO";
+                document.getElementById('statusHorario').className = "horario-tag " + (tiendaAbierta ? "abierto" : "cerrado");
                 
-                if(!tiendaAbierta) {
-                    const btn = document.getElementById('btnPedirFinal');
-                    btn.disabled = true;
-                    btn.innerText = "TIENDA CERRADA";
-                }
+                document.getElementById('cajaReglas').innerText = data.reglas || "Reglas no definidas por el admin.";
+                document.getElementById('porcentajeTxt').innerText = (data.porcentaje || 0) + "%";
+
+                // Guardamos los precios para mandarlos por WhatsApp
+                precioBaseGlobal = data.precioBase || 0;
+                precioKmGlobal = data.precioKm || 0;
             }
         }); 
+    }
+
+    function obtenerGPS() {
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition(pos => {
+                coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                document.getElementById('indicadorGPS').className = "status-gps gps-listo";
+                document.getElementById('puntoGps').className = "dot dot-verde";
+                document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
+                if(tiendaAbierta) document.getElementById('btnPedirFinal').disabled = false;
+                if(tiendaAbierta) document.getElementById('btnPedirFinal').innerText = "🚀 ENVIAR PEDIDO";
+            }, null, { enableHighAccuracy: true });
+        }
     }
 
     db.collection("menu").onSnapshot(snap => {
@@ -153,9 +180,9 @@
             const q = carrito[doc.id] ? carrito[doc.id].qty : 0;
             html += `
             <div class="contenedor-producto">
-                <div class="distribuidor-header">🏠 ${m.distribuidor || 'ANTOJITOS'}</div>
+                <div class="distribuidor-header">🏠 ${m.distribuidor}</div>
                 <div class="item-comida">
-                    <div class="info"><b>${m.nombre.toUpperCase()}</b><span>C$ ${m.precio}</span></div>
+                    <div class="info"><b>${m.nombre}</b><span>C$ ${m.precio}</span></div>
                     <div class="controles">
                         <button class="btn-mas" onclick="modificar('${doc.id}',-1,${m.precio},'${m.nombre}')">-</button>
                         <b id="q-${doc.id}">${q}</b>
@@ -184,39 +211,77 @@
         const nom = document.getElementById('nombreCli').value;
         const tel = document.getElementById('telCli').value;
         const dir = document.getElementById('dirCli').value;
-        
-        if(!nom || !tel || !dir) return alert("Por favor, llena tus datos.");
-        if(subtotalGlobal === 0) return alert("El carrito está vacío.");
-        if(!coordsCliente) return alert("Aún buscando tu GPS...");
+        if(!nom || !tel || !dir || subtotalGlobal === 0) return alert("Completa tu pedido y datos.");
 
         localStorage.setItem('ant_nom', nom);
         localStorage.setItem('ant_tel', tel);
 
-        let itemsArr = [];
+        let itemsTxt = "";
         for(let k in carrito) {
-            if(carrito[k].qty > 0) itemsArr.push(`${carrito[k].qty}x ${carrito[k].nombre}`);
+            if(carrito[k].qty > 0) itemsTxt += `• ${carrito[k].qty}x ${carrito[k].nombre}\n`;
         }
 
-        const pedido = { 
-            cliente: nom, 
-            telefono: tel, 
-            ubicacion: dir, 
-            pedido: itemsArr, 
-            total: subtotalGlobal, // Sincronizado con el Panel Admin
-            estado: "NUEVO", 
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-            coords: coordsCliente 
-        };
-
         try {
-            await db.collection("pedidos").add(pedido);
+            await db.collection("pedidos").add({
+                cliente: nom, telefono: tel, ubicacion: dir, total: subtotalGlobal,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
+            });
+
+            const snapshot = await db.collection("usuarios")
+                .where("rol", "==", "REPARTIDOR").where("aprobado", "==", true).where("disponible", "==", true).get();
+
+            let lista = [];
+            snapshot.forEach(doc => lista.push(doc.data().telefono));
+            
+            let numDestino = lista.length > 0 ? lista[Math.floor(Math.random()*lista.length)] : "50558727685";
+            let numFinal = numDestino.replace(/\D/g,'');
+            if(!numFinal.startsWith('505')) numFinal = '505' + numFinal;
+
+            // AQUÍ ESTÁ EL CAMBIO: Se agregaron las tarifas y se corrigió el link del mapa
+            const msg = encodeURIComponent(
+                `🍔 *NUEVO PEDIDO*\n\n` +
+                `👤 *Cliente:* ${nom}\n` +
+                `📱 *WhatsApp:* ${tel}\n` +
+                `📍 *Dir:* ${dir}\n\n` +
+                `🛒 *PEDIDO:*\n${itemsTxt}\n` +
+                `💰 *Monto de comida:* C$ ${subtotalGlobal}\n\n` +
+                `🛵 *INFO DE ENVÍO:*\n` +
+                `• Tarifa Base: C$ ${precioBaseGlobal}\n` +
+                `• Costo por Km: C$ ${precioKmGlobal}\n\n` +
+                `📍 *Mapa:* https://www.google.com/maps?q=$$${coordsCliente.lat},${coordsCliente.lng}`
+            );
+
             document.getElementById('vistaPedido').classList.add('hidden');
             document.getElementById('pantallaEstado').classList.remove('hidden');
-            
-            // Abrir WhatsApp con resumen
-            const msg = encodeURIComponent(`🍔 *NUEVO PEDIDO*\nCliente: ${nom}\nTotal: C$ ${subtotalGlobal}\nUbicación GPS: https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`);
-            window.open(`https://wa.me/50588888888?text=${msg}`, '_blank');
-        } catch(e) { alert("Error al enviar."); }
+            window.open(`https://wa.me/${numFinal}?text=${msg}`, '_blank');
+        } catch(e) { alert("Error al conectar."); }
+    }
+
+    function mostrarRegistro() {
+        document.getElementById('vistaPedido').classList.add('hidden');
+        document.getElementById('vistaRegistro').classList.remove('hidden');
+    }
+
+    function cancelarRegistro() {
+        document.getElementById('vistaPedido').classList.remove('hidden');
+        document.getElementById('vistaRegistro').classList.add('hidden');
+    }
+
+    async function registrarRepartidor() {
+        const n = document.getElementById('regNombre').value;
+        const t = document.getElementById('regTel').value;
+        const c = document.getElementById('checkGanancia').checked;
+
+        if(!n || !t || !c) return alert("Debes llenar todo y aceptar el porcentaje obligatorio.");
+
+        await db.collection("usuarios").add({
+            nombre: n, telefono: t, rol: "POSTULANTE", aprobado: false, disponible: false,
+            fecha: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        alert("¡Solicitud enviada! El administrador te contactará para activarte.");
+        localStorage.setItem('soyRepartidor', 'true');
+        location.reload();
     }
 </script>
 </body>
