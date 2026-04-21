@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Master Admin - Antojitos PN</title>
+    <title>MASTER CONTROL PN</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <style>
@@ -19,15 +19,8 @@
         .tab-content.active { display: block; }
         
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .pedido-card { border-left: 6px solid #ccc; position: relative; }
+        .pedido-card { border-left: 6px solid var(--azul); position: relative; }
         .fecha-orden { font-size: 0.75em; color: #7f8c8d; display: block; margin-bottom: 8px; font-weight: bold; }
-
-        /* Estilo Tarjetas de Menú */
-        .contenedor-producto { background: white; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #eee; overflow: hidden; }
-        .distribuidor-header { background: var(--oscuro); color: white; padding: 8px 15px; font-weight: bold; font-size: 0.85em; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;}
-        .item-comida { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .info b { display: block; color: var(--oscuro); font-size: 1.05em; }
-        .info span { color: var(--verde); font-size: 1.1em; font-weight: bold; }
 
         .btn-acc { background: var(--verde); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8em; }
         .btn-borrar { background: var(--rojo); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
@@ -50,11 +43,10 @@
 </head>
 <body>
 
-<div class="header"><h3>MASTER CONTROL PN 👑</h3></div>
+<div class="header"><h3>MASTER CONTROL 👑</h3></div>
 
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'pedidos')">ORDENES</button>
-    <button class="tab-btn" onclick="openTab(event, 'menu')">MENÚ</button>
     <button class="tab-btn" onclick="openTab(event, 'repartidores')">EQUIPO</button>
     <button class="tab-btn" onclick="openTab(event, 'ajustes')">AJUSTES</button>
 </div>
@@ -64,49 +56,54 @@
     <div id="listaPedidos">Cargando pedidos...</div>
 </div>
 
-<div id="menu" class="tab-content">
-    <button onclick="crearPlato()" style="background:var(--naranja); color:white; padding:15px; border-radius:10px; width:100%; font-weight:bold; margin-bottom:15px; border:none; cursor:pointer;">+ NUEVO PRODUCTO</button>
-    <div id="gridMenu"></div>
-</div>
-
 <div id="repartidores" class="tab-content">
-    <h4 style="color: var(--oscuro);">Postulantes y Activos</h4>
+    <button onclick="agregarRepartidor()" style="background:var(--naranja); color:white; padding:15px; border-radius:10px; width:100%; font-weight:bold; margin-bottom:15px; border:none; cursor:pointer;">+ NUEVO REPARTIDOR</button>
+    <h4 style="color: var(--oscuro); margin-top: 5px;">Equipo Autorizado</h4>
     <div id="listaRepartidores">Cargando personal...</div>
 </div>
 
 <div id="ajustes" class="tab-content">
     <div class="card">
-        <h3 style="color: var(--naranja); margin-top: 0;">🏪 Operación</h3>
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <span>Estado del Local: <b id="estadoTexto">...</b></span>
+        <h3 style="color: var(--naranja); margin-top: 0;">🏪 Operación del Sistema</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+            <span>Estado Web: <b id="estadoTexto">...</b></span>
             <label class="toggle-switch">
                 <input type="checkbox" id="toggleAbierto" onchange="guardarAjustesRapido()">
                 <span class="slider"></span>
             </label>
         </div>
+        <p style="font-size: 0.8em; color: #666; margin-top: 0;">Si está cerrado, los clientes no podrán enviar pedidos.</p>
     </div>
 
     <div class="card">
-        <h3 style="color: var(--naranja); margin-top: 0;">📋 Reclutamiento y Tarifas</h3>
+        <h3 style="color: var(--naranja); margin-top: 0;">✍️ Ejemplos para Clientes</h3>
+        <p style="font-size: 0.8em; color: #666; margin-bottom: 15px;">Escribe los ejemplos que verán los clientes en el cuadro de texto según el servicio seleccionado.</p>
         
         <div class="input-group">
-            <label>Reglas para los Repartidores</label>
-            <textarea id="confReglas" rows="4" placeholder="Ej: 1. Ser respetuoso. 2. Entregar a tiempo..."></textarea>
+            <label>Sugerencia para Mandados</label>
+            <input type="text" id="exMandado" placeholder="Ej: Necesito un galón de pintura...">
         </div>
+        <div class="input-group">
+            <label>Sugerencia para Comida</label>
+            <input type="text" id="exComida" placeholder="Ej: Quiero 2 servicios de tajadas...">
+        </div>
+        <div class="input-group">
+            <label>Sugerencia para Empleos</label>
+            <input type="text" id="exEmpleo" placeholder="Ej: Necesito ayuda limpiando el patio...">
+        </div>
+        <div class="input-group">
+            <label>Sugerencia para Otros</label>
+            <input type="text" id="exOtro" placeholder="Ej: ¿Pueden instalar una lámpara?...">
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="color: var(--naranja); margin-top: 0;">📞 Reclutamiento</h3>
         
         <div class="input-group">
-            <label>Porcentaje para el Administrador (%)</label>
-            <input type="number" id="confPorcentaje" placeholder="Ej: 10">
-        </div>
-
-        <div class="input-group">
-            <label>Precio Base de Envío (C$)</label>
-            <input type="number" id="confPrecioBase" placeholder="Ej: 20">
-        </div>
-
-        <div class="input-group">
-            <label>Precio Extra por Kilómetro (C$)</label>
-            <input type="number" id="confPrecioKm" placeholder="Ej: 10">
+            <label>Número para solicitar empleo</label>
+            <input type="tel" id="confTelefonoAdmin" placeholder="Ej: 88888888 (Sin +505)">
+            <small style="color: gray; margin-top: 5px;">Este número aparecerá a quienes intenten entrar al panel de repartidor sin estar registrados.</small>
         </div>
 
         <button onclick="guardarAjustesRapido()" class="btn-save">GUARDAR AJUSTES</button>
@@ -125,7 +122,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    window.onload = () => { escucharPedidos(); escucharMenu(); escucharRepartidores(); cargarConfig(); };
+    window.onload = () => { escucharPedidos(); escucharRepartidores(); cargarConfig(); };
 
     // ==========================================
     // CONFIGURACIONES Y AJUSTES
@@ -137,28 +134,35 @@
                 document.getElementById('toggleAbierto').checked = d.abierto || false;
                 document.getElementById('estadoTexto').innerText = d.abierto ? "ABIERTO" : "CERRADO";
                 document.getElementById('estadoTexto').style.color = d.abierto ? "green" : "red";
+                document.getElementById('confTelefonoAdmin').value = d.telefonoAdmin || "";
                 
-                document.getElementById('confReglas').value = d.reglas || "";
-                document.getElementById('confPorcentaje').value = d.porcentaje || 0;
-                document.getElementById('confPrecioBase').value = d.precioBase || 0;
-                document.getElementById('confPrecioKm').value = d.precioKm || 0;
+                // Cargar ejemplos actuales en los inputs
+                document.getElementById('exMandado').value = d.ejemploMandado || "";
+                document.getElementById('exComida').value = d.ejemploComida || "";
+                document.getElementById('exEmpleo').value = d.ejemploEmpleo || "";
+                document.getElementById('exOtro').value = d.ejemploOtro || "";
             }
         });
     }
 
     async function guardarAjustesRapido() {
+        const telAdmin = document.getElementById('confTelefonoAdmin').value.trim();
+        
         await db.collection("configuracion").doc("global").set({
             abierto: document.getElementById('toggleAbierto').checked,
-            reglas: document.getElementById('confReglas').value,
-            porcentaje: parseFloat(document.getElementById('confPorcentaje').value || 0),
-            precioBase: parseFloat(document.getElementById('confPrecioBase').value || 0),
-            precioKm: parseFloat(document.getElementById('confPrecioKm').value || 0)
+            telefonoAdmin: telAdmin,
+            // Guardar nuevos ejemplos
+            ejemploMandado: document.getElementById('exMandado').value.trim(),
+            ejemploComida: document.getElementById('exComida').value.trim(),
+            ejemploEmpleo: document.getElementById('exEmpleo').value.trim(),
+            ejemploOtro: document.getElementById('exOtro').value.trim()
         }, { merge: true });
-        alert("Ajustes guardados correctamente.");
+        
+        alert("Ajustes actualizados.");
     }
 
     // ==========================================
-    // ÓRDENES
+    // ÓRDENES (HISTORIAL DETALLADO)
     // ==========================================
     function escucharPedidos() {
         db.collection("pedidos").orderBy("timestamp", "desc").onSnapshot(snap => {
@@ -166,168 +170,85 @@
             cont.innerHTML = "";
             snap.forEach(doc => {
                 const p = doc.data();
-                
-                // Formateo de Fecha
-                let fechaHora = "Fecha no registrada";
-                if(p.timestamp) {
-                    const date = p.timestamp.toDate();
-                    fechaHora = date.toLocaleString('es-NI', { dateStyle: 'medium', timeStyle: 'short' });
-                }
+                let fechaHora = p.timestamp ? p.timestamp.toDate().toLocaleString('es-NI', { dateStyle: 'medium', timeStyle: 'short' }) : "---";
 
                 cont.innerHTML += `
                     <div class="card pedido-card">
                         <span class="fecha-orden">🕒 ${fechaHora}</span>
-                        <b>👤 ${p.cliente}</b> - C$ ${p.total}<br>
-                        📦 ${Array.isArray(p.pedido) ? p.pedido.join(", ") : p.pedido}<br>
-                        📍 ${p.ubicacion}<br><br>
-                        <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar Historial</button>
+                        <b style="color: var(--naranja); font-size: 1.1em;">👤 ${p.cliente || 'Sin nombre'}</b><br>
+                        <hr style="border:0; border-top:1px dashed #ddd; margin: 8px 0;">
+                        <b>🏷️ Servicio:</b> ${p.tipo || 'N/A'}<br>
+                        <b>📝 Detalle:</b> ${p.detalle || 'Sin descripción'}<br>
+                        <b>📍 Ubicación:</b> ${p.ubicacion || 'No especificada'}<br>
+                        ${p.repartidorAsignado ? `<b>🚴 Asignado a:</b> ${p.repartidorAsignado}<br>` : ''}
+                        <br>
+                        <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar del Historial</button>
                     </div>`;
             });
         });
     }
 
     async function eliminarPedido(id) { 
-        if(confirm("¿Estás seguro de que quieres borrar este pedido del historial?")) {
-            await db.collection("pedidos").doc(id).delete(); 
-        }
+        if(confirm("¿Borrar este pedido del historial?")) { await db.collection("pedidos").doc(id).delete(); }
     }
 
     async function eliminarTodoElHistorial() {
-        const confirmar1 = confirm("⚠️ ATENCIÓN: Estás a punto de borrar TODOS los pedidos de la base de datos. Esto no se puede deshacer. ¿Continuar?");
-        if(confirmar1) {
-            const confirmar2 = confirm("¿Estás ABSOLUTAMENTE SEGURO? Presiona Aceptar para borrar todo.");
-            if(confirmar2) {
-                const snap = await db.collection("pedidos").get();
-                const batch = db.batch();
-                snap.forEach(doc => batch.delete(doc.ref));
-                await batch.commit();
-                alert("El historial ha sido borrado por completo.");
-            }
+        if(confirm("⚠️ ¿Borrar ABSOLUTAMENTE TODO el historial?")) {
+            const snap = await db.collection("pedidos").get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("Historial limpio.");
         }
     }
 
     // ==========================================
-    // MENÚ
-    // ==========================================
-    function escucharMenu() {
-        db.collection("menu").onSnapshot(snap => {
-            const grid = document.getElementById('gridMenu');
-            grid.innerHTML = "";
-            snap.forEach(doc => {
-                const m = doc.data();
-                grid.innerHTML += `
-                    <div class="contenedor-producto">
-                        <div class="distribuidor-header">
-                            <span>🏠 ${m.distribuidor || 'Antojitos'}</span>
-                        </div>
-                        <div class="item-comida">
-                            <div class="info">
-                                <b>${m.nombre.toUpperCase()}</b>
-                                <span>C$ ${m.precio}</span>
-                            </div>
-                            <div style="display:flex; gap: 5px;">
-                                <button class="btn-edit" onclick="editarPlato('${doc.id}', '${m.nombre}', ${m.precio}, '${m.distribuidor}')">✏️</button>
-                                <button class="btn-borrar" onclick="eliminarPlato('${doc.id}')">🗑️</button>
-                            </div>
-                        </div>
-                    </div>`;
-            });
-        });
-    }
-
-    async function crearPlato() {
-        const nom = prompt("Nombre del nuevo producto:");
-        if(!nom) return;
-        const pre = prompt("Precio (C$):");
-        if(!pre) return;
-        const dis = prompt("Distribuidor (Local que lo vende):", "Antojitos PN");
-        
-        await db.collection("menu").add({
-            nombre: nom, precio: parseFloat(pre), distribuidor: dis, disponible: true
-        });
-    }
-
-    async function editarPlato(id, nombreActual, precioActual, distribuidorActual) {
-        const nom = prompt("Editar Nombre:", nombreActual);
-        if(!nom) return;
-        const pre = prompt("Editar Precio (C$):", precioActual);
-        if(!pre) return;
-        const dis = prompt("Editar Distribuidor:", distribuidorActual);
-
-        await db.collection("menu").doc(id).update({
-            nombre: nom, precio: parseFloat(pre), distribuidor: dis || "Antojitos PN"
-        });
-    }
-
-    async function eliminarPlato(id) { 
-        if(confirm("¿Seguro que deseas eliminar este producto del menú?")) {
-            await db.collection("menu").doc(id).delete(); 
-        }
-    }
-
-    // ==========================================
-    // EQUIPO (REPARTIDORES)
+    // EQUIPO (GESTIÓN DE REPARTIDORES)
     // ==========================================
     function escucharRepartidores() {
-        // Traemos a los postulantes y a los repartidores aprobados
-        db.collection("usuarios").where("rol", "in", ["POSTULANTE", "REPARTIDOR"]).onSnapshot(snap => {
+        db.collection("usuarios").where("rol", "==", "REPARTIDOR").onSnapshot(snap => {
             const cont = document.getElementById('listaRepartidores');
             cont.innerHTML = "";
             snap.forEach(doc => {
                 const u = doc.data();
-                const esPostulante = u.rol === "POSTULANTE";
-                
-                let botones = "";
-                if(esPostulante) {
-                    botones = `
-                        <div style="display:flex; gap:5px; margin-top:10px;">
-                            <button class="btn-acc" style="flex:1;" onclick="aceptarRepartidor('${doc.id}')">Aceptar</button>
-                            <button class="btn-borrar" style="flex:1;" onclick="rechazarRepartidor('${doc.id}')">Rechazar</button>
-                        </div>`;
-                } else {
-                    botones = `
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                            <span style="color:var(--verde); font-weight:bold; font-size:0.85em;">✅ ACTIVO</span>
-                            <button class="btn-borrar" onclick="eliminarRepartidor('${doc.id}')">Eliminar</button>
-                        </div>`;
-                }
-
                 cont.innerHTML += `
-                    <div class="card" style="border-left: 5px solid ${esPostulante ? 'var(--naranja)' : 'var(--verde)'};">
-                        <b>👤 ${u.nombre}</b><br>
+                    <div class="card" style="border-left: 5px solid ${u.disponible ? 'var(--verde)' : 'gray'};">
+                        <div style="display:flex; justify-content:space-between;">
+                            <b>👤 ${u.nombre}</b>
+                            <span style="font-size:0.8em; font-weight:bold; color:${u.disponible ? 'green' : 'gray'}">
+                                ${u.disponible ? '🟢 ONLINE' : '⚪ OFFLINE'}
+                            </span>
+                        </div>
                         📱 ${u.telefono}<br>
-                        <small style="color: gray;">Estado: ${esPostulante ? 'Esperando aprobación...' : 'Repartidor Autorizado'}</small>
-                        ${botones}
+                        <div style="display:flex; gap:5px; margin-top:10px;">
+                            <button class="btn-edit" style="flex:1;" onclick="editarRepartidor('${doc.id}', '${u.nombre}', '${u.telefono}')">Editar</button>
+                            <button class="btn-borrar" style="flex:1;" onclick="eliminarRepartidor('${doc.id}')">Eliminar</button>
+                        </div>
                     </div>`;
             });
         });
     }
 
-    async function aceptarRepartidor(id) {
-        if(confirm("¿Aceptar a este usuario como Repartidor Oficial?")) {
-            await db.collection("usuarios").doc(id).update({
-                rol: "REPARTIDOR",
-                aprobado: true,
-                disponible: true
-            });
+    async function agregarRepartidor() {
+        const nom = prompt("Nombre del repartidor:");
+        const tel = prompt("Número de WhatsApp (Sin +505):");
+        if(nom && tel) {
+            await db.collection("usuarios").add({ nombre: nom, telefono: tel.trim(), rol: "REPARTIDOR", disponible: false });
         }
     }
 
-    async function rechazarRepartidor(id) {
-        if(confirm("¿Rechazar esta solicitud? El registro será eliminado.")) {
-            await db.collection("usuarios").doc(id).delete();
+    async function editarRepartidor(id, n, t) {
+        const nom = prompt("Nombre:", n);
+        const tel = prompt("Número:", t);
+        if(nom && tel) {
+            await db.collection("usuarios").doc(id).update({ nombre: nom, telefono: tel.trim() });
         }
     }
 
     async function eliminarRepartidor(id) {
-        if(confirm("¿Seguro que quieres eliminar a este Repartidor? Ya no podrá recibir órdenes.")) {
-            await db.collection("usuarios").doc(id).delete();
-        }
+        if(confirm("¿Eliminar repartidor?")) { await db.collection("usuarios").doc(id).delete(); }
     }
 
-    // ==========================================
-    // NAVEGACIÓN DE PESTAÑAS
-    // ==========================================
     function openTab(evt, id) {
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
