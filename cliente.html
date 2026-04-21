@@ -253,25 +253,32 @@
         });
     }
 
+    // ==========================================
+    // GPS CON AUTO-REINTENTO (SIN REFRESCAR)
+    // ==========================================
     function obtenerGPS() {
         if (!navigator.geolocation) return;
+        
         navigator.geolocation.watchPosition((pos) => {
             coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             document.getElementById('indicadorGPS').className = "status-gps gps-listo";
             document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
             document.getElementById('puntoGps').className = "dot dot-verde";
-            if(tiendaAbierta) document.getElementById('btnPedirFinal').disabled = false;
-            if(tiendaAbierta) document.getElementById('btnPedirFinal').innerText = "🚀 ENVIAR SOLICITUD";
-        }, null, { enableHighAccuracy: true });
+            if(tiendaAbierta) {
+                document.getElementById('btnPedirFinal').disabled = false;
+                document.getElementById('btnPedirFinal').innerText = "🚀 ENVIAR SOLICITUD";
+            }
+        }, (error) => {
+            // Si hay error (GPS apagado o denegado), reintentamos en 3 segundos
+            console.log("GPS no detectado, reintentando...");
+            setTimeout(obtenerGPS, 3000);
+        }, { enableHighAccuracy: true });
     }
 
-    // ==========================================
-    // FUNCIÓN ACTUALIZADA (MENSAJE COMPLETO)
-    // ==========================================
     async function lanzarPedido() {
         const nom = document.getElementById('nombreCli').value;
         const tel = document.getElementById('telCli').value;
-        const dir = document.getElementById('dirCli').value; // Dirección escrita
+        const dir = document.getElementById('dirCli').value;
         const desc = document.getElementById('detallePedido').value;
 
         if(!nom || !tel || !dir || !desc) return alert("Completa los campos.");
@@ -286,17 +293,15 @@
             const lista = snapRepartidores.docs;
             const elegido = lista[Math.floor(Math.random() * lista.length)].data();
 
-            // Guardar en Firestore
             await db.collection("pedidos").add({
                 cliente: nom, telefono: tel, ubicacion: dir, detalle: desc,
                 tipo: servicioSeleccionado, estado: "NUEVO", repartidorAsignado: elegido.nombre,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // Preparar enlaces y mensaje
+            // Enlace de Google Maps corregido ($)
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             
-            // Mensaje de WhatsApp enriquecido con la dirección de texto
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
             window.open(`https://wa.me/505${elegido.telefono}?text=${msg}`, '_blank');
