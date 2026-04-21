@@ -86,10 +86,15 @@
             <button class="btn-pedir" onclick="intentarLogin()" style="padding: 12px; margin-top: 5px;">Entrar a mi panel</button>
         </div>
 
+        <div id="boxRecluta" style="margin-top: 15px; background: #e8f5e9; border: 1.5px solid #2ecc71; padding: 15px; border-radius: 15px; text-align: center;">
+            <p style="color: #2e7d32; font-size: 0.9em; margin: 0; font-weight: bold;">¿Deseas trabajar con nosotros?</p>
+            <a id="linkGralRecluta" href="#" style="font-size: 1.1em; font-weight: bold; color: #1b5e20; text-decoration: none; display: block; margin-top: 5px;">🚀 Solicitar Empleo aquí</a>
+        </div>
+
         <div id="msgError" class="hidden" style="margin-top: 15px; background: #ffebee; border: 1px solid #e53935; padding: 15px; border-radius: 15px; text-align: left;">
-            <p style="color: #c62828; font-size: 0.9em; margin-top: 0;"><strong>⚠️ Acceso Denegado</strong><br>Tu número de teléfono no está registrado en la base del administrador.</p>
+            <p style="color: #c62828; font-size: 0.9em; margin-top: 0;"><strong>⚠️ Acceso Denegado</strong><br>Tu número de teléfono no está registrado.</p>
             <hr style="border: 0; border-top: 1px solid #ffcdd2; margin: 10px 0;">
-            <p style="color: #d32f2f; font-size: 0.9em; margin-bottom: 5px;">Por favor comunícate con este número si deseas solicitar empleo:</p>
+            <p style="color: #d32f2f; font-size: 0.9em; margin-bottom: 5px;">Comunícate con el administrador:</p>
             <a id="linkAdminRecluta" href="#" style="font-size: 1.3em; font-weight: bold; color: #b71c1c; text-decoration: none; display: block; text-align: center;">Cargando...</a>
         </div>
 
@@ -152,7 +157,19 @@
                 tiendaAbierta = datos.abierto;
                 document.getElementById('statusHorario').innerText = tiendaAbierta ? "🟢 SERVICIO DISPONIBLE" : "🔴 CERRADO";
                 document.getElementById('statusHorario').className = "horario-tag " + (tiendaAbierta ? "abierto" : "cerrado");
-                if(datos.telefonoAdmin) numeroAdminEmpleo = datos.telefonoAdmin;
+                
+                if(datos.telefonoAdmin) {
+                    numeroAdminEmpleo = datos.telefonoAdmin;
+                    // Sincronizar enlaces de reclutamiento
+                    const linkGral = document.getElementById('linkGralRecluta');
+                    const linkErr = document.getElementById('linkAdminRecluta');
+                    if(linkGral) linkGral.href = `https://wa.me/505${numeroAdminEmpleo}`;
+                    if(linkErr) {
+                        linkErr.innerText = "+505 " + numeroAdminEmpleo;
+                        linkErr.href = `https://wa.me/505${numeroAdminEmpleo}`;
+                    }
+                }
+
                 if(datos.ejemploMandado) ejemplosAdmin.MANDADO = datos.ejemploMandado;
                 if(datos.ejemploComida) ejemplosAdmin.COMIDA = datos.ejemploComida;
                 if(datos.ejemploEmpleo) ejemplosAdmin.EMPLEO = datos.ejemploEmpleo;
@@ -207,10 +224,6 @@
             } else {
                 esRepartidor = false;
                 document.getElementById('msgError').classList.remove('hidden');
-                if(numeroAdminEmpleo) {
-                    document.getElementById('linkAdminRecluta').innerText = "+505 " + numeroAdminEmpleo;
-                    document.getElementById('linkAdminRecluta').href = `https://wa.me/505${numeroAdminEmpleo}`;
-                }
             }
         } catch (e) { console.error(e); alert("Error de red."); }
     }
@@ -253,12 +266,8 @@
         });
     }
 
-    // ==========================================
-    // GPS CON AUTO-REINTENTO (SIN REFRESCAR)
-    // ==========================================
     function obtenerGPS() {
         if (!navigator.geolocation) return;
-        
         navigator.geolocation.watchPosition((pos) => {
             coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             document.getElementById('indicadorGPS').className = "status-gps gps-listo";
@@ -269,8 +278,6 @@
                 document.getElementById('btnPedirFinal').innerText = "🚀 ENVIAR SOLICITUD";
             }
         }, (error) => {
-            // Si hay error (GPS apagado o denegado), reintentamos en 3 segundos
-            console.log("GPS no detectado, reintentando...");
             setTimeout(obtenerGPS, 3000);
         }, { enableHighAccuracy: true });
     }
@@ -282,6 +289,7 @@
         const desc = document.getElementById('detallePedido').value;
 
         if(!nom || !tel || !dir || !desc) return alert("Completa los campos.");
+        if(!coordsCliente) return alert("Esperando señal GPS...");
         
         localStorage.setItem('ant_nom', nom);
         localStorage.setItem('ant_tel', tel);
@@ -299,7 +307,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // Enlace de Google Maps corregido ($)
+            // ENLACE DE MAPAS CORREGIDO
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
