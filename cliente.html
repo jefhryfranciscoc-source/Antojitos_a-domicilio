@@ -33,29 +33,26 @@
         .area-total { text-align: center; margin-top: 20px; padding: 15px; background: #fff; border-radius: 15px; }
         .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-pedir:disabled { background: #ccc; }
+        .btn-productos { display: block; background: #fff; color: var(--naranja); border: 2px solid var(--naranja); width: 100%; padding: 15px; border-radius: 18px; font-size: 1em; font-weight: bold; text-decoration: none; text-align: center; margin-top: 15px; box-sizing: border-box; transition: 0.3s; }
+        .btn-productos:active { background: #fff3e0; }
         .repartidor-panel { background: #ebf5ff; border: 2px solid var(--azul); padding: 20px; border-radius: 20px; margin-top: 10px; text-align: center; }
         .status-toggle { padding: 15px; border-radius: 15px; font-weight: bold; border: none; width: 100%; cursor: pointer; margin-bottom: 15px; font-size: 1em; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .lista-colegas { font-size: 0.85em; color: #555; text-align: left; background: white; padding: 12px; border-radius: 15px; margin-top: 15px; border: 1px solid #d0e1f9; }
+        .lista-colegas { font-size: 0.85em; color: #555; text-align: left; background: #f9fbff; padding: 12px; border-radius: 15px; margin-top: 15px; border: 1px solid #d0e1f9; }
     </style>
 </head>
 <body>
-
 <div class="card">
     <div id="statusHorario" class="horario-tag">Cargando...</div>
-    
     <div id="menuNavegacion" class="nav-menu">
         <button id="navCliente" class="btn-nav active" onclick="switchView('cliente')">👤 MODO CLIENTE</button>
         <button id="navRepartidor" class="btn-nav" onclick="switchView('repartidor_login')">🚴 MODO REPARTIDOR</button>
     </div>
-
     <h2>Antojitos Pueblo Nuevo 🚀</h2>
-    
     <div id="vistaPedido">
         <div id="indicadorGPS" class="status-gps gps-buscando">
             <span id="puntoGps" class="dot dot-rojo"></span>
             <span id="textoGps">Buscando señal GPS...</span>
         </div>
-
         <p style="text-align:center; font-size:0.9em; color:#666; font-weight:bold;">¿Qué servicio necesitas hoy?</p>
         <div class="grid-servicios">
             <button type="button" id="btn-MANDADO" onclick="seleccionarServicio('MANDADO')" class="btn-servicio activo" style="color:#1565c0;">📦 Mandado / Tienda</button>
@@ -63,65 +60,62 @@
             <button type="button" id="btn-EMPLEO" onclick="seleccionarServicio('EMPLEO')" class="btn-servicio" style="color:#2e7d32;">🧹 Empleo por 1 Día</button>
             <button type="button" id="btn-OTRO" onclick="seleccionarServicio('OTRO')" class="btn-servicio" style="color:#7b1fa2;">✨ Otro Servicio</button>
         </div>
-
         <textarea id="detallePedido" placeholder="Cargando sugerencia..." rows="4" style="border: 2px solid var(--azul);"></textarea>
-        
         <div class="resumen">
             <input type="text" id="nombreCli" placeholder="Tu nombre">
             <input type="tel" id="telCli" placeholder="WhatsApp (ej: 88888888)">
             <textarea id="dirCli" placeholder="Dirección exacta o punto de referencia" rows="2"></textarea>
         </div>
-
         <div class="area-total">
             <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()" disabled>⚠️ ACTIVA TU GPS</button>
+            <a id="btnVerProductos" href="#" target="_blank" class="btn-productos hidden">🛒 Ver Precios y Productos</a>
         </div>
     </div>
-
     <div id="vistaLoginRepartidor" class="hidden" style="text-align: center; padding: 20px;">
         <p style="color: var(--azul); font-weight: bold; font-size: 1.1em;">Área de Repartidores</p>
-        
         <div style="background: #fff; padding: 15px; border-radius: 15px; border: 1px solid #ddd;">
             <p style="font-size: 0.9em; margin-bottom: 10px;">Si ya tienes empleo pon tu número acá:</p>
             <input type="tel" id="inputLogin" placeholder="Ingresa tu número (ej: 88888888)">
             <button class="btn-pedir" onclick="intentarLogin()" style="padding: 12px; margin-top: 5px;">Entrar a mi panel</button>
         </div>
-
         <div id="boxRecluta" style="margin-top: 15px; background: #e8f5e9; border: 1.5px solid #2ecc71; padding: 15px; border-radius: 15px; text-align: center;">
             <p style="color: #2e7d32; font-size: 0.9em; margin: 0; font-weight: bold;">¿Deseas trabajar con nosotros?</p>
             <a id="linkGralRecluta" href="#" style="font-size: 1.1em; font-weight: bold; color: #1b5e20; text-decoration: none; display: block; margin-top: 5px;">🚀 Solicitar Empleo aquí</a>
         </div>
-
         <div id="msgError" class="hidden" style="margin-top: 15px; background: #ffebee; border: 1px solid #e53935; padding: 15px; border-radius: 15px; text-align: left;">
             <p style="color: #c62828; font-size: 0.9em; margin-top: 0;"><strong>⚠️ Acceso Denegado</strong><br>Tu número de teléfono no está registrado.</p>
             <hr style="border: 0; border-top: 1px solid #ffcdd2; margin: 10px 0;">
             <p style="color: #d32f2f; font-size: 0.9em; margin-bottom: 5px;">Comunícate con el administrador:</p>
             <a id="linkAdminRecluta" href="#" style="font-size: 1.3em; font-weight: bold; color: #b71c1c; text-decoration: none; display: block; text-align: center;">Cargando...</a>
         </div>
-
         <button class="btn-nav" style="margin-top: 20px; width: 100%; padding: 12px;" onclick="switchView('cliente')">⬅️ Volver a modo cliente</button>
     </div>
-
     <div id="vistaRepartidor" class="hidden">
         <div class="repartidor-panel">
             <p><strong>Panel de Repartidor</strong></p>
             <button id="btnStatusRepartidor" class="status-toggle" onclick="toggleDisponibilidad()">CARGANDO ESTADO...</button>
             <div class="lista-colegas">
-                <strong>Colegas en línea:</strong>
-                <div id="listaRepartidoresOnline" style="margin-top:8px;">Buscando afiliados...</div>
+                <strong>Equipo Autorizado:</strong>
+                <div id="listaRepartidoresOnline" style="margin-top:10px;">Buscando afiliados...</div>
             </div>
             <button class="btn-nav" style="margin-top: 15px; width: 100%; font-size: 0.8em;" onclick="switchView('cliente')">Cerrar mi panel (Volver)</button>
         </div>
     </div>
-
     <div id="pantallaEstado" class="hidden" style="text-align:center; padding: 40px 10px;">
         <h3>¡Solicitud Enviada! 🚀</h3>
         <p id="msgConfirmacion">Se ha notificado a un repartidor activo.</p>
         <button class="btn-pedir" onclick="location.reload()">NUEVA SOLICITUD</button>
     </div>
 </div>
-
 <script>
-    const firebaseConfig = { apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", projectId: "antojitos-pueblo-nuevo", storageBucket: "antojitos-pueblo-nuevo.appspot.com", messagingSenderId: "1006413360329", appId: "1:1006413360329:web:99103e89833729cc2e3118" };
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
+        authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
+        projectId: "antojitos-pueblo-nuevo", 
+        storageBucket: "antojitos-pueblo-nuevo.appspot.com", 
+        messagingSenderId: "1006413360329", 
+        appId: "1:1006413360329:web:99103e89833729cc2e3118" 
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     
@@ -160,7 +154,6 @@
                 
                 if(datos.telefonoAdmin) {
                     numeroAdminEmpleo = datos.telefonoAdmin;
-                    // Sincronizar enlaces de reclutamiento
                     const linkGral = document.getElementById('linkGralRecluta');
                     const linkErr = document.getElementById('linkAdminRecluta');
                     if(linkGral) linkGral.href = `https://wa.me/505${numeroAdminEmpleo}`;
@@ -168,6 +161,14 @@
                         linkErr.innerText = "+505 " + numeroAdminEmpleo;
                         linkErr.href = `https://wa.me/505${numeroAdminEmpleo}`;
                     }
+                }
+
+                const btnProd = document.getElementById('btnVerProductos');
+                if(datos.linkProductos && datos.linkProductos.trim() !== "") {
+                    btnProd.href = datos.linkProductos;
+                    btnProd.classList.remove('hidden');
+                } else {
+                    btnProd.classList.add('hidden');
                 }
 
                 if(datos.ejemploMandado) ejemplosAdmin.MANDADO = datos.ejemploMandado;
@@ -260,7 +261,20 @@
             let html = "";
             snap.forEach(doc => {
                 const d = doc.data();
-                html += `<div style="margin-bottom:5px;">${d.disponible ? "🟢" : "🔴"} ${d.nombre || 'Compañero'}</div>`;
+                const colorBorde = d.disponible ? "#2ecc71" : "gray";
+                const textoEstado = d.disponible ? "🟢 ONLINE" : "⚪ OFFLINE";
+                const colorTexto = d.disponible ? "green" : "gray";
+
+                html += `
+                    <div style="background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid ${colorBorde}; display: flex; justify-content: space-between; align-items: center;">
+                        <div style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 65%;">
+                            <b style="color: #2c3e50; font-size: 1.05em;">👤 ${d.nombre || 'Compañero'}</b><br>
+                            <span style="font-size: 0.85em; color: #555;">📱 ${d.telefono}</span>
+                        </div>
+                        <span style="font-size:0.8em; font-weight:bold; color:${colorTexto}; white-space: nowrap;">
+                            ${textoEstado}
+                        </span>
+                    </div>`;
             });
             document.getElementById('listaRepartidoresOnline').innerHTML = html;
         });
@@ -307,13 +321,10 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // ENLACE DE MAPAS CORREGIDO
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
-            
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
             window.open(`https://wa.me/505${elegido.telefono}?text=${msg}`, '_blank');
-            
             document.getElementById('vistaPedido').classList.add('hidden');
             document.getElementById('pantallaEstado').classList.remove('hidden');
 
