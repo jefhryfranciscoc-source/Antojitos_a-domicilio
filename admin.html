@@ -76,6 +76,15 @@
     </div>
 
     <div class="card">
+        <h3 style="color: var(--naranja); margin-top: 0;">🔗 Catálogo / Menú Web</h3>
+        <div class="input-group">
+            <label>Link de Productos y Precios</label>
+            <input type="url" id="confLinkProductos" placeholder="Ej: https://mi-menu.com">
+            <small style="color: gray; margin-top: 5px;">Este enlace se conectará con la app del cliente para que puedan ver qué ordenar.</small>
+        </div>
+    </div>
+
+    <div class="card">
         <h3 style="color: var(--naranja); margin-top: 0;">✍️ Ejemplos para Clientes</h3>
         <p style="font-size: 0.8em; color: #666; margin-bottom: 15px;">Escribe los ejemplos que verán los clientes en el cuadro de texto según el servicio seleccionado.</p>
         
@@ -136,6 +145,9 @@
                 document.getElementById('estadoTexto').style.color = d.abierto ? "green" : "red";
                 document.getElementById('confTelefonoAdmin').value = d.telefonoAdmin || "";
                 
+                // Cargar el link de productos
+                document.getElementById('confLinkProductos').value = d.linkProductos || "";
+                
                 // Cargar ejemplos actuales en los inputs
                 document.getElementById('exMandado').value = d.ejemploMandado || "";
                 document.getElementById('exComida').value = d.ejemploComida || "";
@@ -147,11 +159,12 @@
 
     async function guardarAjustesRapido() {
         const telAdmin = document.getElementById('confTelefonoAdmin').value.trim();
+        const linkProd = document.getElementById('confLinkProductos').value.trim();
         
         await db.collection("configuracion").doc("global").set({
             abierto: document.getElementById('toggleAbierto').checked,
             telefonoAdmin: telAdmin,
-            // Guardar nuevos ejemplos
+            linkProductos: linkProd, // Guardar el nuevo link
             ejemploMandado: document.getElementById('exMandado').value.trim(),
             ejemploComida: document.getElementById('exComida').value.trim(),
             ejemploEmpleo: document.getElementById('exEmpleo').value.trim(),
