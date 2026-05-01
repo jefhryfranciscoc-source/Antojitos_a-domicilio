@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo - Antojitos Pueblo Nuevo</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+        :root { --naranja: #e67e22; --azul: #3498db; --oscuro: #2c3e50; --gris: #f4f7f6; --verde: #2ecc71; }
+        
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f0f2f5; 
+            margin: 0; 
+            padding: 10px; 
+            padding-bottom: 100px; 
+        }
+        
+        header { text-align: center; padding: 15px 10px; }
+        
+        .tabs-container { 
+            display: flex; gap: 10px; overflow-x: auto; padding: 10px 5px; 
+            white-space: nowrap; scrollbar-width: none; 
+            position: sticky; top: 0; background: #f0f2f5; z-index: 10;
+        }
+        
+        .tab-btn { 
+            padding: 10px 22px; border-radius: 25px; border: none; 
+            background: #fff; color: #666; font-weight: bold; 
+            cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            transition: 0.3s; 
+        }
+        .tab-btn.active { background: var(--naranja); color: white; }
+
+        .contenedor-locales { max-width: 600px; margin: auto; display: grid; gap: 12px; margin-top: 10px; }
+        
+        .local-card { 
+            background: white; border-radius: 18px; overflow: hidden; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; 
+            transition: 0.3s; 
+        }
+        
+        .local-header { padding: 18px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .local-info { display: flex; align-items: center; gap: 15px; }
+        .local-icon { font-size: 1.6em; width: 40px; text-align: center; }
+        .local-nombre { font-weight: bold; color: var(--oscuro); font-size: 1.1em; }
+        .arrow { transition: 0.3s; color: #bbb; font-size: 0.8em; }
+        
+        .local-card.open { border: 1.5px solid var(--naranja); box-shadow: 0 4px 15px rgba(230, 126, 34, 0.15); }
+        .local-card.open .arrow { transform: rotate(180deg); color: var(--naranja); }
+
+        .productos-lista { display: none; padding: 5px 18px 18px 18px; border-top: 1px solid #f9f9f9; background: #fff; }
+        .local-card.open .productos-lista { display: block; animation: fadeIn 0.3s ease; }
+        
+        .producto-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 12px 0; border-bottom: 1px solid #f4f4f4; 
+        }
+        .producto-item:last-child { border: none; }
+        .prod-info b { color: #333; font-size: 0.95em; display: block; }
+        .prod-info span { font-size: 0.75em; color: #999; }
+        .prod-precio { color: var(--naranja); font-weight: 800; font-size: 1em; white-space: nowrap; margin-left: 10px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .btn-hacer-pedido {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 380px; background: var(--verde); color: white;
+            text-align: center; padding: 16px; border-radius: 50px; font-weight: bold;
+            text-decoration: none; font-size: 1.1em; box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
+            z-index: 90; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2 style="color: var(--naranja); margin: 0;">Antojitos Pueblo Nuevo 🏪</h2>
+    <p style="font-size: 0.8em; color: #777; margin-top: 5px;">Explora los locales de nuestro pueblo</p>
+</header>
+
+<div id="tabsCategorias" class="tabs-container">
+    <button class="tab-btn active" onclick="seleccionarTab('todo', this)">✨ Todo</button>
+</div>
+
+<div id="listaLocales" class="contenedor-locales">
+    <p style="text-align: center; color: #999; padding: 40px;">Cargando catálogo...</p>
+</div>
+
+<a href="#" id="btnIrAPedidos" class="btn-hacer-pedido">
+    <span>🛒</span> HACER PEDIDO
+</a>
+
+<script>
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
+        authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
+        projectId: "antojitos-pueblo-nuevo", 
+        storageBucket: "antojitos-pueblo-nuevo.appspot.com", 
+        messagingSenderId: "1006413360329", 
+        appId: "1:1006413360329:web:99103e89833729cc2e3118" 
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let categoriaActual = "todo";
+
+    window.onload = () => {
+        cargarCategorias();
+        cargarLocales();
+        cargarConfigGlobal();
+    };
+
+    function cargarCategorias() {
+        db.collection("categorias").orderBy("nombre").onSnapshot(snap => {
+            const container = document.getElementById('tabsCategorias');
+            container.innerHTML = `<button class="tab-btn ${categoriaActual === 'todo' ? 'active' : ''}" onclick="seleccionarTab('todo', this)">✨ Todo</button>`;
+            snap.forEach(doc => {
+                const cat = doc.data();
+                container.innerHTML += `<button class="tab-btn ${categoriaActual === doc.id ? 'active' : ''}" onclick="seleccionarTab('${doc.id}', this)">${cat.nombre}</button>`;
+            });
+        });
+    }
+
+    function seleccionarTab(id, btn) {
+        categoriaActual = id;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        cargarLocales();
+    }
+
+    function cargarLocales() {
+        let query = db.collection("locales");
+        if (categoriaActual !== "todo") query = query.where("categoriaId", "==", categoriaActual);
+
+        query.onSnapshot(snap => {
+            const container = document.getElementById('listaLocales');
+            container.innerHTML = "";
+            if (snap.empty) container.innerHTML = "<p style='text-align:center; color:#999;'>No hay locales aquí aún.</p>";
+
+            snap.forEach(doc => {
+                const local = doc.data();
+                const id = doc.id;
+                container.innerHTML += `
+                    <div class="local-card" id="card-${id}">
+                        <div class="local-header" onclick="toggleAcordeon('${id}')">
+                            <div class="local-info">
+                                <span class="local-icon">${local.emoji || '🏘️'}</span>
+                                <span class="local-nombre">${local.nombre}</span>
+                            </div>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div id="lista-prod-${id}" class="productos-lista">
+                            <p style="font-size:0.8em; color:#ccc; text-align:center;">Cargando menú...</p>
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    function toggleAcordeon(id) {
+        const card = document.getElementById(`card-${id}`);
+        const estaAbierto = card.classList.contains('open');
+        document.querySelectorAll('.local-card').forEach(c => c.classList.remove('open'));
+        if (!estaAbierto) {
+            card.classList.add('open');
+            cargarProductosDelLocal(id);
+        }
+    }
+
+    function cargarProductosDelLocal(localId) {
+        const box = document.getElementById(`lista-prod-${localId}`);
+        db.collection("productos").where("localId", "==", localId).onSnapshot(snap => {
+            box.innerHTML = "";
+            if (snap.empty) {
+                box.innerHTML = "<p style='text-align:center; font-size:0.8em; color:#999;'>Menú no disponible por ahora.</p>";
+                return;
+            }
+            snap.forEach(doc => {
+                const p = doc.data();
+                box.innerHTML += `
+                    <div class="producto-item">
+                        <div class="prod-info">
+                            <b>${p.nombre}</b>
+                            ${p.descripcion ? `<span>${p.descripcion}</span>` : ''}
+                        </div>
+                        <div class="prod-precio">${p.precio}</div>
+                    </div>`;
+            });
+        });
+    }
+
+    function cargarConfigGlobal() {
+        db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
+            if(doc.exists) document.getElementById('btnIrAPedidos').href = doc.data().linkPedido || "#";
+        });
+    }
+</script>
+</body>
+</html>
+          
