@@ -321,11 +321,10 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // Enlace de mapas oficial y universal
-            const mapsLink = `https://maps.google.com/?q=${coordsCliente.lat},${coordsCliente.lng}`;
+            // ENLACE CORREGIDO PARA MÁXIMA PRECISIÓN:
+            const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
-            // Solución anti-bloqueo para iPhone (funciona igual de bien en Android)
             window.location.href = `https://wa.me/505${elegido.telefono}?text=${msg}`;
             
             document.getElementById('vistaPedido').classList.add('hidden');
@@ -333,6 +332,5 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-</script>
-</body>
-</html>
+                                      </script>
+                                      
