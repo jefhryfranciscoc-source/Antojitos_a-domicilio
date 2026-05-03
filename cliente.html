@@ -175,9 +175,9 @@
 
     function vigilarRepartidores() {
         db.collection("usuarios")
-           .where("rol", "==", "REPARTIDOR")
-           .where("disponible", "==", true)
-           .onSnapshot(snap => {
+         .where("rol", "==", "REPARTIDOR")
+         .where("disponible", "==", true)
+         .onSnapshot(snap => {
                 const aviso = document.getElementById('avisoNoRepartidores');
                 const btnPedir = document.getElementById('btnPedirFinal');
                 const statusTag = document.getElementById('statusHorario');
@@ -356,38 +356,34 @@
         });
     }
 
-    // ===== FUNCIÓN GPS CORREGIDA =====
     function obtenerGPS() {
         if (!navigator.geolocation) {
             alert("Tu navegador no soporta GPS");
             return;
         }
 
-        // Usamos getCurrentPosition primero para pedir permiso y obtener ubicación inicial rápida
         navigator.geolocation.getCurrentPosition((pos) => {
             actualizarCoordenadas(pos);
 
-            // Luego usamos watchPosition para seguir actualizando si se mueve o mejora precisión
             navigator.geolocation.watchPosition((pos) => {
-                // Solo actualizamos si la precisión mejoró
                 if (!coordsCliente || pos.coords.accuracy < coordsCliente.accuracy) {
                     actualizarCoordenadas(pos);
                 }
             }, (error) => {
                 console.log("Error watchPosition:", error);
             }, {
-                enableHighAccuracy: true, // GPS real, no wifi
-                timeout: 20000, // 20 seg: le damos tiempo al GPS real
-                maximumAge: 0 // Nunca usar caché viejo
+                enableHighAccuracy: true,
+                timeout: 20000,
+                maximumAge: 0
             });
 
         }, (error) => {
             console.log("Error GPS inicial:", error);
             document.getElementById('textoGps').innerText = "❌ GPS DENEGADO";
-            setTimeout(obtenerGPS, 5000); // Reintenta en 5 seg
+            setTimeout(obtenerGPS, 5000);
         }, {
             enableHighAccuracy: true,
-            timeout: 20000, // CLAVE: 20 segundos para que agarre satélites
+            timeout: 20000,
             maximumAge: 0
         });
     }
@@ -396,7 +392,7 @@
         coordsCliente = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy // Guardamos la precisión en metros
+            accuracy: pos.coords.accuracy
         };
 
         console.log(`GPS: ${coordsCliente.lat}, ${coordsCliente.lng} | Precisión: ${coordsCliente.accuracy}m`);
@@ -408,9 +404,9 @@
         if(avisoEspera) avisoEspera.classList.add('hidden');
 
         db.collection("usuarios")
-           .where("rol", "==", "REPARTIDOR")
-           .where("disponible", "==", true)
-           .get().then(snap => {
+         .where("rol", "==", "REPARTIDOR")
+         .where("disponible", "==", true)
+         .get().then(snap => {
                 if(!snap.empty && tiendaAbierta) {
                     const btn = document.getElementById('btnPedirFinal');
                     btn.disabled = false;
@@ -419,7 +415,6 @@
                 }
             });
     }
-    // ===== FIN FUNCIÓN GPS CORREGIDA =====
 
     async function lanzarPedido() {
         const nom = document.getElementById('nombreCli').value;
@@ -430,7 +425,6 @@
         if(!nom ||!tel ||!dir ||!desc) return alert("Completa los campos.");
         if(!coordsCliente) return alert("Esperando señal GPS...");
 
-        // Advertencia si la precisión es mala
         if(coordsCliente.accuracy > 20) {
             let continuar = confirm(`Tu GPS tiene ${Math.round(coordsCliente.accuracy)}m de error. ¿Seguro que estás al aire libre? El repartidor podría no encontrarte fácil. ¿Continuar?`);
             if(!continuar) return;
@@ -451,13 +445,13 @@
                 tipo: servicioSeleccionado, estado: "NUEVO", repartidorAsignado: elegido.nombre,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 coords: coordsCliente,
-                precision: coordsCliente.accuracy // Guardamos precisión para debug
+                precision: coordsCliente.accuracy
             });
 
-            // CORRECCIÓN: Link con zoom máximo y pin centrado. Esto clava el punto exacto.
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}&ll=${coordsCliente.lat},${coordsCliente.lng}&z=20`;
 
-            const msg = `*NUEVO PEDIDO - ANTOJITOS*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Precisión GPS:* ±${Math.round(coordsCliente.accuracy)}m%0A*Mapa GPS:* ${mapsLink}`;
+            // MENSAJE CORREGIDO: Usa \n para saltos de línea
+            const msg = `*NUEVO PEDIDO - ANTOJITOS*\n*Cliente:* ${nom}\n*Teléfono:* ${tel}\n*Servicio:* ${servicioSeleccionado}\n*Detalle:* ${desc}\n*Dirección:* ${dir}\n*Precisión GPS:* ±${Math.round(coordsCliente.accuracy)}m\n*Mapa GPS:* ${mapsLink}`;
 
             window.location.href = `https://wa.me/505${elegido.telefono}?text=${encodeURIComponent(msg)}`;
 
@@ -469,4 +463,4 @@
             alert("Error de conexión.");
         }
     }
-</script>
+                    </script>
