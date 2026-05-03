@@ -149,7 +149,8 @@
     let esRepartidor = false;
     let idRepartidor = null;
     let numeroAdminEmpleo = "";
-    let watchID = null; // Para auto-detectar GPS
+    let watchID = null;
+    let intervaloReintento = null; // Para auto-refresh GPS
 
     let ejemplosAdmin = {
         MANDADO: "Ej: Necesito un galón de pintura blanca...",
@@ -176,9 +177,9 @@
 
     function vigilarRepartidores() {
         db.collection("usuarios")
-       .where("rol", "==", "REPARTIDOR")
-       .where("disponible", "==", true)
-       .onSnapshot(snap => {
+      .where("rol", "==", "REPARTIDOR")
+      .where("disponible", "==", true)
+      .onSnapshot(snap => {
                 const aviso = document.getElementById('avisoNoRepartidores');
                 const btnPedir = document.getElementById('btnPedirFinal');
                 const statusTag = document.getElementById('statusHorario');
@@ -357,77 +358,77 @@
         });
     }
 
-    // ===== GPS MEJORADO CON AUTO-DETECTAR + BOTÓN =====
+    // ===== GPS CON AUTO-REFRESH CADA 8 SEG =====
     function obtenerGPS() {
         if (!navigator.geolocation) {
             mostrarErrorGPS("Tu navegador no soporta GPS", "Usa Chrome o Safari actualizado");
             return;
         }
 
-        // Botón inicial - lo dejé tal cual te gusta
         document.getElementById('avisoEsperaGPS').innerHTML = `
             <button onclick="forzarPermisoGPS()" style="background:#3498db;color:white;border:none;padding:15px;border-radius:12px;width:100%;font-size:1em;font-weight:bold;cursor:pointer;">
                 📍 TOCA AQUÍ PARA ACTIVAR TU UBICACIÓN
             </button>
-            <p style="font-size:0.8em;margin-top:10px;color:#555;">Si ya diste permiso, espera 15 segundos al aire libre</p>
+            <p style="font-size:0.8em;margin-top:10px;color:#555;">Buscando GPS automáticamente...</p>
         `;
         document.getElementById('avisoEsperaGPS').onclick = null;
 
-        // Intento 1: Agarrar GPS de una
+        intentarGPS();
+        iniciarAutoRefresh();
+    }
+
+    function intentarGPS() {
         navigator.geolocation.getCurrentPosition((pos) => {
             actualizarCoordenadas(pos);
+            detenerAutoRefresh();
         }, (error) => {
-            console.log("Error GPS inicial:", error);
+            console.log("Error GPS:", error);
             manejarErrorGPS(error);
-            // Si falla, empezamos a escuchar por si prende el GPS
-            iniciarAutoDetectar();
         }, {
             enableHighAccuracy: true,
-            timeout: 20000,
+            timeout: 8000,
             maximumAge: 0
         });
+    }
+
+    function iniciarAutoRefresh() {
+        if (intervaloReintento) return;
+        intervaloReintento = setInterval(() => {
+            if (!coordsCliente) {
+                console.log("Reintentando GPS...");
+                intentarGPS();
+            } else {
+                detenerAutoRefresh();
+            }
+        }, 8000); // Cada 8 segundos
+    }
+
+    function detenerAutoRefresh() {
+        if (intervaloReintento) {
+            clearInterval(intervaloReintento);
+            intervaloReintento = null;
+        }
+        if (watchID) {
+            navigator.geolocation.clearWatch(watchID);
+            watchID = null;
+        }
     }
 
     function forzarPermisoGPS() {
         document.getElementById('textoGps').innerText = "Buscando señal GPS...";
         document.getElementById('puntoGps').className = "dot dot-rojo";
-        document.getElementById('avisoEsperaGPS').innerHTML = "⏳ Esperando permiso... <br><b>Acepta cuando el navegador pregunte</b>";
-
-        navigator.geolocation.getCurrentPosition((pos) => {
-            actualizarCoordenadas(pos);
-            if (watchID) { navigator.geolocation.clearWatch(watchID); watchID = null; }
-        }, (error) => {
-            manejarErrorGPS(error);
-        }, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        });
-    }
-
-    // NUEVO: Auto-detectar cuando prenden el GPS sin tocar botón
-    function iniciarAutoDetectar() {
-        if (watchID || coordsCliente) return; // Ya está corriendo o ya tenemos GPS
-
-        watchID = navigator.geolocation.watchPosition(
-            (pos) => {
-                // ¡Se prendió el GPS! Actualizamos solo
-                actualizarCoordenadas(pos);
-                navigator.geolocation.clearWatch(watchID);
-                watchID = null;
-            },
-            (err) => { /* sigue apagado, no hacemos nada */ },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 }
-        );
+        document.getElementById('avisoEsperaGPS').innerHTML = "⏳ Buscando tu ubicación...";
+        intentarGPS();
     }
 
     function manejarErrorGPS(error) {
         if (error.code === 1) { // PERMISSION_DENIED
+            detenerAutoRefresh();
             mostrarErrorGPSBloqueado();
         } else if (error.code === 2) { // POSITION_UNAVAILABLE
-            mostrarErrorGPS("📍 GPS Apagado", "Activa la Ubicación en los ajustes de tu celular y toca el botón");
+            mostrarErrorGPS("📍 GPS Apagado", "Activa la Ubicación en los ajustes de tu celular");
         } else if (error.code === 3) { // TIMEOUT
-            mostrarErrorGPS("⏳ No encontramos tu ubicación", "Sal al aire libre o cerca de una ventana y toca el botón");
+            mostrarErrorGPS("⏳ Buscando GPS...", "Sal al aire libre o cerca de una ventana");
         }
     }
 
@@ -436,15 +437,14 @@
         document.getElementById('puntoGps').className = "dot dot-rojo";
         document.getElementById('avisoEsperaGPS').innerHTML = `
             <button onclick="mostrarInstruccionesCandado()" style="background:#e74c3c;color:white;border:none;padding:15px;border-radius:12px;width:100%;font-size:1em;font-weight:bold;cursor:pointer;">
-                🔒 GPS BLOQUEADO - TOCA PARA VER CÓMO ACTIVARLO
+                🔒 GPS BLOQUEADO - TOCA PARA ACTIVARLO
             </button>
-            <p style="font-size:0.85em;margin-top:10px;color:#333;"><b>Bloqueaste el permiso sin querer</b></p>
         `;
         document.getElementById('avisoEsperaGPS').classList.remove('hidden');
     }
 
     function mostrarInstruccionesCandado() {
-        alert(`Para activar el GPS:\n\n1. Toca el candado 🔒 arriba en la barra del navegador\n2. Busca "Ubicación" y cámbialo a "Permitir"\n3. Recarga la página o toca "REINTENTAR"\n\nO escribe tu dirección manual abajo 👇`);
+        alert(`Para activar el GPS:\n\n1. Toca el candado 🔒 arriba en la barra\n2. Busca "Ubicación" y cámbialo a "Permitir"\n3. Recarga la página`);
     }
 
     function mostrarErrorGPS(titulo, instruccion) {
@@ -474,10 +474,12 @@
         const avisoEspera = document.getElementById('avisoEsperaGPS');
         if(avisoEspera) avisoEspera.classList.add('hidden');
 
+        detenerAutoRefresh();
+
         db.collection("usuarios")
-       .where("rol", "==", "REPARTIDOR")
-       .where("disponible", "==", true)
-       .get().then(snap => {
+      .where("rol", "==", "REPARTIDOR")
+      .where("disponible", "==", true)
+      .get().then(snap => {
                 if(!snap.empty && tiendaAbierta) {
                     const btn = document.getElementById('btnPedirFinal');
                     btn.disabled = false;
