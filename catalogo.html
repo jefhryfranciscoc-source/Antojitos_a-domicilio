@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <style>
-        :root { --naranja: #e67e22; --azul: #3498db; --oscuro: #1a252f; --texto-suave: #7f8c8d; --verde: #2ecc71; --fondo-desc: #f8f9fa; }
+        :root { --naranja: #e67e22; --naranja-claro: #fdf2e9; --azul: #3498db; --oscuro: #1a252f; --texto-suave: #7f8c8d; --verde: #2ecc71; --fondo-desc: #f8f9fa; }
         
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -19,12 +19,24 @@
         header { text-align: center; padding: 20px 10px 10px 10px; }
         header h2 { font-size: 2em; font-weight: 900; letter-spacing: -1px; margin-bottom: 2px; }
         
+        /* --- ESTILO RESALTADO PARA EL MENSAJE DE ENVÍO --- */
         #mensajeBienvenida {
-            font-size: 1.15em; color: var(--oscuro); font-weight: 700;
-            margin-bottom: 10px; display: block; padding: 0 15px; line-height: 1.2;
+            font-size: 1em; 
+            color: #d35400; /* Naranja oscuro que resalta pero no satura */
+            background: var(--naranja-claro); /* Fondo suave */
+            font-weight: 700;
+            margin: 10px auto 5px auto; 
+            display: inline-block; 
+            padding: 8px 15px; 
+            line-height: 1.3;
+            border-radius: 10px;
+            border: 1px solid rgba(230, 126, 34, 0.3); /* Borde sutil */
         }
 
-        header .eslogan-bajo { font-size: 0.95em; color: var(--texto-suave); font-weight: 500; }
+        #textoSugerencia {
+            font-size: 0.9em; color: var(--texto-suave); font-weight: 500;
+            margin-bottom: 15px; display: block; padding: 0 20px; font-style: italic;
+        }
         
         .tabs-wrapper {
             position: sticky; top: 0; background: rgba(253, 253, 253, 0.95);
@@ -77,31 +89,47 @@
         
         .prod-info-base b { color: #000; font-size: 1.2em; display: block; font-weight: 800; }
         
+        /* --- ESTILO PARA RESPETAR SALTOS DE LÍNEA EN DESCRIPCIÓN --- */
         .prod-desc { 
-            font-size: 0.95em; color: #444; background: var(--fondo-desc);
+            font-size: 0.9em; color: #555; background: var(--fondo-desc);
             padding: 10px 12px; border-radius: 12px; border-left: 3px solid #ddd; margin-bottom: 10px;
+            white-space: pre-wrap; /* Esta línea respeta los Enter que das en el admin */
         }
 
         .prod-precio { 
             background: var(--naranja); color: #fff; font-weight: 900; 
-            font-size: 1.15em; padding: 8px 14px; border-radius: 12px;
+            font-size: 1.1em; padding: 8px 14px; border-radius: 12px;
             box-shadow: 0 4px 10px rgba(230, 126, 34, 0.25);
         }
 
-        /* DISEÑO DE MARCAS DISCRETAS */
-        .variantes-container {
-            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px;
-        }
-        
-        .chip-variante {
-            background: #fff; border: 1px solid var(--naranja); color: var(--oscuro);
-            padding: 4px 10px; border-radius: 8px; font-size: 0.85em; font-weight: 700;
-            display: flex; gap: 5px; align-items: center;
+        /* --- DISEÑO DE CHIPS (CUADRADITOS REDONDEADOS PEQUEÑOS) --- */
+        .variantes-titulo { 
+            font-size: 0.65em; text-transform: uppercase; color: #d35400; 
+            font-weight: 800; margin: 10px 0 6px 5px;
+            letter-spacing: 1px; opacity: 0.8;
         }
 
-        .chip-variante span { color: var(--naranja); font-weight: 900; }
+        .contenedor-chips-marcas {
+            display: flex;
+            flex-wrap: wrap; /* Permite que se pongan una al lado de la otra */
+            gap: 8px; /* Espacio entre cuadraditos */
+            margin-top: 5px;
+        }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .chip-marca {
+            background: #fffafa; /* Fondo rosado sutil */
+            border: 1.5px solid #edbb99; /* Borde naranja/salmón suave */
+            border-radius: 10px; /* Cuadradito redondeado */
+            padding: 6px 12px;
+            font-size: 0.82em;
+            color: #5d4037;
+            font-weight: 700;
+            display: inline-block; /* Solo ocupa el espacio del texto */
+            box-shadow: 0 2px 4px rgba(237, 187, 153, 0.1);
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
         .btn-hacer-pedido {
             position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
@@ -116,8 +144,8 @@
 
 <header>
     <h2 style="color: var(--naranja);">Antojitos Pueblo Nuevo 🏪</h2>
-    <span id="mensajeBienvenida">Cargando mensaje...</span>
-    <p class="eslogan-bajo">Lo que quieras, cuando quieras</p>
+    <span id="mensajeBienvenida">Cargando...</span>
+    <span id="textoSugerencia"></span>
 </header>
 
 <div class="tabs-wrapper">
@@ -156,6 +184,7 @@
                 const data = doc.data();
                 document.getElementById('btnIrAPedidos').href = data.linkPedido || "#";
                 document.getElementById('mensajeBienvenida').innerText = data.mensajeCabecera || "¡Bienvenidos!";
+                document.getElementById('textoSugerencia').innerText = data.textoSugerencia || "";
             }
         });
     }
@@ -219,14 +248,14 @@
             snap.forEach(doc => {
                 const p = doc.data();
                 
-                // Lógica para procesar marcas (variantes)
                 let variantesHtml = "";
                 if (p.variantes) {
-                    const lista = p.variantes.split(","); 
-                    variantesHtml = '<div class="variantes-container">';
+                    const lista = p.variantes.split("-"); 
+                    variantesHtml = '<div class="variantes-titulo">Marcas Disponibles:</div><div class="contenedor-chips-marcas">';
                     lista.forEach(v => {
-                        const parts = v.split(":"); // Separa nombre de precio
-                        variantesHtml += `<div class="chip-variante">${parts[0]} <span>${parts[1] || ''}</span></div>`;
+                        if(v.trim() !== "") {
+                            variantesHtml += `<div class="chip-marca">${v.trim()}</div>`;
+                        }
                     });
                     variantesHtml += '</div>';
                 }
