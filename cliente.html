@@ -160,57 +160,59 @@
     window.onload = () => {
         obtenerGPS();
         cargarConfig();
-        vigilarRepartidores(); 
+        vigilarEstadoServicio(); 
         
         const savedNom = localStorage.getItem('ant_nom') || "";
         const savedTel = localStorage.getItem('ant_tel') || "";
         document.getElementById('nombreCli').value = savedNom;
         document.getElementById('telCli').value = savedTel;
 
-        document.getElementById('dirCli').placeholder = "Ayúdanos a encontrarte Ej: (casa color amarillo, puerta (portón) negro frente a X local)";
-
         const savedRepartidor = localStorage.getItem('ant_tel_repartidor');
         if(savedRepartidor) autoVerificar(savedRepartidor);
     };
 
-    function vigilarRepartidores() {
+    function vigilarEstadoServicio() {
         db.collection("usuarios")
             .where("rol", "==", "REPARTIDOR")
             .where("disponible", "==", true)
             .onSnapshot(snap => {
-                const aviso = document.getElementById('avisoNoRepartidores');
-                const btnPedir = document.getElementById('btnPedirFinal');
                 const statusTag = document.getElementById('statusHorario');
+                const btnPedir = document.getElementById('btnPedirFinal');
                 
-                if (tiendaAbierta) {
-                    if (snap.empty) {
-                        statusTag.innerText = "🟡 PAUSADO - No hay repartidores";
-                        statusTag.className = "horario-tag pausado";
+                if (!tiendaAbierta) {
+                    // ESTADO: CERRADO
+                    statusTag.innerText = "🔴 CERRADO";
+                    statusTag.className = "horario-tag cerrado";
+                    btnPedir.disabled = true;
+                    btnPedir.innerText = "🔴 CERRADO";
+                    btnPedir.style.background = "#95a5a6";
+                } 
+                else if (snap.empty) {
+                    // ESTADO: PAUSADO
+                    statusTag.innerText = "🟡 SERVICIO PAUSADO";
+                    statusTag.className = "horario-tag pausado";
+                    statusTag.style.background = "#fff9c4";
+                    statusTag.style.color = "#f57f17";
+                    
+                    btnPedir.disabled = true;
+                    btnPedir.innerText = "🚫 SIN REPARTIDORES";
+                    btnPedir.style.background = "#95a5a6";
+                } 
+                else {
+                    // ESTADO: DISPONIBLE / ABIERTO
+                    statusTag.innerText = "🟢 ABIERTO";
+                    statusTag.className = "horario-tag abierto";
+                    statusTag.style.background = "#e8f5e9";
+                    statusTag.style.color = "#2e7d32";
+                    
+                    if(coordsCliente) {
+                        btnPedir.disabled = false;
+                        btnPedir.innerText = "🚀 ENVIAR SOLICITUD";
+                        btnPedir.style.background = "#e67e22";
                     } else {
-                        statusTag.innerText = "🟢 ABIERTO";
-                        statusTag.className = "horario-tag abierto";
-                    }
-                }
-
-                if (snap.empty) {
-                    if(aviso) aviso.classList.remove('hidden');
-                    if(btnPedir) {
                         btnPedir.disabled = true;
-                        btnPedir.innerText = "🚫 NO HAY REPARTIDORES";
-                        btnPedir.style.background = "#95a5a6";
-                    }
-                } else {
-                    if(aviso) aviso.classList.add('hidden');
-                    if(btnPedir) {
-                        if(!coordsCliente) {
-                            btnPedir.disabled = true;
-                            btnPedir.innerText = "⚠️ ACTIVA TU GPS";
-                            btnPedir.style.background = "#ccc";
-                        } else if(tiendaAbierta) {
-                            btnPedir.disabled = false;
-                            btnPedir.innerText = "🚀 ENVIAR SOLICITUD";
-                            btnPedir.style.background = "#e67e22";
-                        }
+                        btnPedir.innerText = "⚠️ ACTIVA TU GPS";
+                        btnPedir.style.background = "#ccc";
                     }
                 }
             });
@@ -221,11 +223,8 @@
             if(doc.exists) {
                 const datos = doc.data();
                 tiendaAbierta = datos.abierto;
-                const statusTag = document.getElementById('statusHorario');
-                if (!tiendaAbierta) {
-                    statusTag.innerText = "🔴 CERRADO";
-                    statusTag.className = "horario-tag cerrado";
-                } 
+                vigilarEstadoServicio(); 
+
                 if(datos.telefonoAdmin) {
                     numeroAdminEmpleo = datos.telefonoAdmin;
                     const linkGral = document.getElementById('linkGralRecluta');
@@ -236,6 +235,7 @@
                         linkErr.href = `https://wa.me/505${numeroAdminEmpleo}`;
                     }
                 }
+
                 const btnProd = document.getElementById('btnVerProductos');
                 if(datos.linkProductos && datos.linkProductos.trim() !== "") {
                     btnProd.href = datos.linkProductos;
@@ -243,6 +243,7 @@
                 } else {
                     btnProd.classList.add('hidden');
                 }
+
                 if(datos.ejemploMandado) ejemplosAdmin.MANDADO = datos.ejemploMandado;
                 if(datos.ejemploComida) ejemplosAdmin.COMIDA = datos.ejemploComida;
                 if(datos.ejemploEmpleo) ejemplosAdmin.EMPLEO = datos.ejemploEmpleo;
@@ -261,7 +262,7 @@
 
     function actualizarPlaceholder() {
         const area = document.getElementById('detallePedido');
-        area.placeholder = ejemplosAdmin[servicioSeleccionado] || "Escribe aquí los detalles...";
+        if(area) area.placeholder = ejemplosAdmin[servicioSeleccionado] || "Escribe aquí los detalles...";
     }
 
     function switchView(modo) {
@@ -314,9 +315,11 @@
 
     function actualizarBotonEstado(disponible) {
         const btn = document.getElementById('btnStatusRepartidor');
-        btn.innerText = disponible ? "🟢 ESTÁS ACTIVO (Recibiendo pedidos)" : "🔴 ESTÁS INACTIVO";
-        btn.style.background = disponible ? "#2ecc71" : "#e74c3c";
-        btn.style.color = "white";
+        if(btn) {
+            btn.innerText = disponible ? "🟢 ESTÁS ACTIVO (Recibiendo pedidos)" : "🔴 ESTÁS INACTIVO";
+            btn.style.background = disponible ? "#2ecc71" : "#e74c3c";
+            btn.style.color = "white";
+        }
     }
 
     async function toggleDisponibilidad() {
@@ -348,11 +351,11 @@
                         </span>
                     </div>`;
             });
-            document.getElementById('listaRepartidoresOnline').innerHTML = html;
+            const lista = document.getElementById('listaRepartidoresOnline');
+            if(lista) lista.innerHTML = html;
         });
     }
 
-    // --- LÓGICA DE ALTA PRECISIÓN RESTAURADA ---
     function obtenerGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.watchPosition((pos) => {
@@ -361,19 +364,7 @@
             document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
             document.getElementById('puntoGps').className = "dot dot-verde";
             
-            db.collection("usuarios")
-                .where("rol", "==", "REPARTIDOR")
-                .where("disponible", "==", true)
-                .get().then(snap => {
-                    if(!snap.empty && tiendaAbierta) {
-                        const btn = document.getElementById('btnPedirFinal');
-                        if(btn) {
-                            btn.disabled = false;
-                            btn.innerText = "🚀 ENVIAR SOLICITUD";
-                            btn.style.background = "#e67e22";
-                        }
-                    }
-                });
+            vigilarEstadoServicio();
         }, (error) => {
             setTimeout(obtenerGPS, 3000);
         }, { enableHighAccuracy: true });
@@ -385,15 +376,15 @@
         const dir = document.getElementById('dirCli').value;
         const desc = document.getElementById('detallePedido').value;
 
-        if(!nom || !tel || !dir || !desc) return alert("Completa todos los campos.");
-        if(!coordsCliente) return alert("⚠️ Esperando señal GPS precisa...");
+        if(!nom || !tel || !dir || !desc) return alert("Completa los campos.");
+        if(!coordsCliente) return alert("Esperando señal GPS...");
         
         localStorage.setItem('ant_nom', nom);
         localStorage.setItem('ant_tel', tel);
 
         try {
             const snapRepartidores = await db.collection("usuarios").where("rol", "==", "REPARTIDOR").where("disponible", "==", true).get();
-            if (snapRepartidores.empty) return alert("Lo sentimos, no hay repartidores activos.");
+            if (snapRepartidores.empty) return alert("No hay repartidores activos.");
             
             const lista = snapRepartidores.docs;
             const elegido = lista[Math.floor(Math.random() * lista.length)].data();
@@ -404,9 +395,8 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // ENLACE CORREGIDO Y LIMPIO:
+            // CORRECCIÓN DE SINTAXIS AQUÍ:
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
-            
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
             window.location.href = `https://wa.me/505${elegido.telefono}?text=${msg}`;
@@ -414,10 +404,7 @@
             document.getElementById('vistaPedido').classList.add('hidden');
             document.getElementById('pantallaEstado').classList.remove('hidden');
 
-        } catch(e) { 
-            console.error(e);
-            alert("Error de conexión."); 
-        }
+        } catch(e) { alert("Error de conexión."); }
     }
-                        </script>
-                        
+                    </script>
+                    
