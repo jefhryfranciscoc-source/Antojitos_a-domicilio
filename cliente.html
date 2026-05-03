@@ -169,7 +169,6 @@
         if(savedRepartidor) autoVerificar(savedRepartidor);
     };
 
-    // FUNCIÓN ACTUALIZADA: Alterna estados entre disponibilidad y GPS
     function vigilarRepartidores() {
         db.collection("usuarios")
             .where("rol", "==", "REPARTIDOR")
@@ -179,7 +178,6 @@
                 const btnPedir = document.getElementById('btnPedirFinal');
                 
                 if (snap.empty) {
-                    // Si NO hay repartidores: Prioridad máxima al aviso de error
                     if(aviso) aviso.classList.remove('hidden');
                     if(btnPedir) {
                         btnPedir.disabled = true;
@@ -187,17 +185,13 @@
                         btnPedir.style.background = "#95a5a6";
                     }
                 } else {
-                    // Si HAY repartidores: Quitamos aviso y revisamos GPS
                     if(aviso) aviso.classList.add('hidden');
-                    
                     if(btnPedir) {
                         if(!coordsCliente) {
-                            // Si no hay GPS todavía
                             btnPedir.disabled = true;
                             btnPedir.innerText = "⚠️ ACTIVA TU GPS";
                             btnPedir.style.background = "#ccc";
                         } else if(tiendaAbierta) {
-                            // Si hay GPS y tienda abierta
                             btnPedir.disabled = false;
                             btnPedir.innerText = "🚀 ENVIAR SOLICITUD";
                             btnPedir.style.background = "#e67e22";
@@ -343,24 +337,31 @@
         });
     }
 
+    // FUNCIÓN ACTUALIZADA: Oculta el aviso de espera al encontrar señal
     function obtenerGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.watchPosition((pos) => {
             coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            
+            // Actualizamos indicadores visuales
             document.getElementById('indicadorGPS').className = "status-gps gps-listo";
             document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
             document.getElementById('puntoGps').className = "dot dot-verde";
             
-            // Forzamos una re-evaluación del botón al obtener coordenadas
-            const snapRepartidores = db.collection("usuarios")
+            // OCULTAR EL AVISO DE ESPERA DE 15 SEGUNDOS
+            const avisoEspera = document.getElementById('avisoEsperaGPS');
+            if(avisoEspera) avisoEspera.classList.add('hidden');
+            
+            // Re-evaluar disponibilidad de repartidores para habilitar el botón
+            db.collection("usuarios")
                 .where("rol", "==", "REPARTIDOR")
                 .where("disponible", "==", true)
                 .get().then(snap => {
                     if(!snap.empty && tiendaAbierta) {
                         const btn = document.getElementById('btnPedirFinal');
                         btn.disabled = false;
-                        btnPedir.innerText = "🚀 ENVIAR SOLICITUD";
-                        btnPedir.style.background = "#e67e22";
+                        btn.innerText = "🚀 ENVIAR SOLICITUD";
+                        btn.style.background = "#e67e22";
                     }
                 });
 
@@ -404,5 +405,5 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-                   </script>
-                   
+                </script>
+                
