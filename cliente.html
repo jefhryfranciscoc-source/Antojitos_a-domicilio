@@ -352,25 +352,14 @@
         });
     }
 
-    // CONFIGURACIÓN DE GPS DE GRADO PROFESIONAL
+    // --- LÓGICA DE ALTA PRECISIÓN RESTAURADA ---
     function obtenerGPS() {
         if (!navigator.geolocation) return;
-        
-        const geoOptions = {
-            enableHighAccuracy: true, // Obliga al uso de hardware GPS
-            timeout: 20000,           // Más tiempo para estabilizar
-            maximumAge: 0             // Siempre datos frescos
-        };
-
         navigator.geolocation.watchPosition((pos) => {
             coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            
             document.getElementById('indicadorGPS').className = "status-gps gps-listo";
             document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
             document.getElementById('puntoGps').className = "dot dot-verde";
-            
-            const avisoEspera = document.getElementById('avisoEsperaGPS');
-            if(avisoEspera) avisoEspera.classList.add('hidden');
             
             db.collection("usuarios")
                 .where("rol", "==", "REPARTIDOR")
@@ -387,7 +376,7 @@
                 });
         }, (error) => {
             setTimeout(obtenerGPS, 3000);
-        }, geoOptions);
+        }, { enableHighAccuracy: true });
     }
 
     async function lanzarPedido() {
@@ -396,15 +385,15 @@
         const dir = document.getElementById('dirCli').value;
         const desc = document.getElementById('detallePedido').value;
 
-        if(!nom || !tel || !dir || !desc) return alert("Completa los campos.");
-        if(!coordsCliente) return alert("Esperando señal GPS precisa...");
+        if(!nom || !tel || !dir || !desc) return alert("Completa todos los campos.");
+        if(!coordsCliente) return alert("⚠️ Esperando señal GPS precisa...");
         
         localStorage.setItem('ant_nom', nom);
         localStorage.setItem('ant_tel', tel);
 
         try {
             const snapRepartidores = await db.collection("usuarios").where("rol", "==", "REPARTIDOR").where("disponible", "==", true).get();
-            if (snapRepartidores.empty) return alert("No hay repartidores activos.");
+            if (snapRepartidores.empty) return alert("Lo sentimos, no hay repartidores activos.");
             
             const lista = snapRepartidores.docs;
             const elegido = lista[Math.floor(Math.random() * lista.length)].data();
@@ -415,7 +404,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // ESTE ES EL LINK QUE MARCA EL PIN EXACTO (Formato de búsqueda por coordenadas)
+            // ENLACE CORREGIDO Y LIMPIO:
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
@@ -425,6 +414,10 @@
             document.getElementById('vistaPedido').classList.add('hidden');
             document.getElementById('pantallaEstado').classList.remove('hidden');
 
-        } catch(e) { console.error(e); alert("Error de red."); }
+        } catch(e) { 
+            console.error(e);
+            alert("Error de conexión."); 
+        }
     }
-</script>
+                        </script>
+                        
