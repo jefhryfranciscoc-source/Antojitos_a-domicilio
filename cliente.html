@@ -16,7 +16,7 @@
         /* ESTADOS DE COLORES */
         .abierto { background: #e8f5e9; color: #2e7d32; }
         .cerrado { background: #ffebee; color: #c62828; }
-        .pausado { background: #fff9db; color: #d35400; } /* Nuevo estado amarillo */
+        .pausado { background: #fff9db; color: #d35400; }
 
         h2 { color: var(--naranja); text-align: center; margin-bottom: 5px; }
         .nav-menu { display: flex; gap: 5px; margin-bottom: 15px; }
@@ -30,7 +30,6 @@
         .dot-verde { background-color: #2ecc71; }
         @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
         
-        /* Nuevo estilo para el aviso de espera GPS */
         .aviso-espera-gps { background: #ebf5ff; color: #2980b9; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; font-size: 0.85em; border: 1px solid #3498db; line-height: 1.4; }
 
         .grid-servicios { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
@@ -51,7 +50,7 @@
 </head>
 <body>
 <div class="card">
-    <div id="statusHorario" class="horario-tag abierto">🟢 SERVICIO DISPONIBLE</div>
+    <div id="statusHorario" class="horario-tag abierto">🟢 ABIERTO</div>
     
     <div id="menuNavegacion" class="nav-menu">
         <button id="navCliente" class="btn-nav active" onclick="switchView('cliente')">👤 MODO CLIENTE</button>
@@ -146,7 +145,7 @@
     
     let servicioSeleccionado = "MANDADO";
     let coordsCliente = null;
-    let tiendaAbierta = false; // Maneja el cierre manual (Rojo/Verde)
+    let tiendaAbierta = false; 
     let esRepartidor = false;
     let idRepartidor = null;
     let numeroAdminEmpleo = "";
@@ -174,7 +173,6 @@
         if(savedRepartidor) autoVerificar(savedRepartidor);
     };
 
-    // FUNCIÓN ACTUALIZADA: Controla el aviso de "No hay repartidores" y el BANNER AMARILLO automático
     function vigilarRepartidores() {
         db.collection("usuarios")
             .where("rol", "==", "REPARTIDOR")
@@ -184,18 +182,17 @@
                 const btnPedir = document.getElementById('btnPedirFinal');
                 const statusTag = document.getElementById('statusHorario');
                 
-                // Lógica del Banner Amarillo Automático
+                // Lógica de textos actualizada a "ABIERTO"
                 if (tiendaAbierta) {
                     if (snap.empty) {
-                        statusTag.innerText = "🟡 SERVICIO PAUSADO - No hay repartidores";
+                        statusTag.innerText = "🟡 PAUSADO - No hay repartidores";
                         statusTag.className = "horario-tag pausado";
                     } else {
-                        statusTag.innerText = "🟢 SERVICIO DISPONIBLE";
+                        statusTag.innerText = "🟢 ABIERTO";
                         statusTag.className = "horario-tag abierto";
                     }
                 }
 
-                // Lógica del botón de pedido
                 if (snap.empty) {
                     if(aviso) aviso.classList.remove('hidden');
                     if(btnPedir) {
@@ -228,12 +225,10 @@
                 
                 const statusTag = document.getElementById('statusHorario');
                 
-                // Si está cerrado manualmente, siempre será ROJO
                 if (!tiendaAbierta) {
                     statusTag.innerText = "🔴 CERRADO";
                     statusTag.className = "horario-tag cerrado";
                 } 
-                // Si está abierto, la función vigilarRepartidores() decidirá si es Verde o Amarillo
 
                 if(datos.telefonoAdmin) {
                     numeroAdminEmpleo = datos.telefonoAdmin;
