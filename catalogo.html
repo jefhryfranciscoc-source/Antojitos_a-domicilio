@@ -68,7 +68,9 @@
         .prod-cuerpo { display: flex; gap: 12px; align-items: flex-start; }
         .prod-desc { flex: 1; font-size: 0.95em; color: #555; background: var(--fondo-desc); padding: 10px 12px; border-radius: 12px; border-left: 3px solid #ddd; white-space: pre-wrap; margin-bottom: 5px; }
         
-        .prod-foto-mini { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 1px solid #eee; flex-shrink: 0; }
+        /* Detalle para que en iPhone se sienta como botón */
+        .prod-foto-mini { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 1px solid #eee; flex-shrink: 0; cursor: pointer; transition: transform 0.2s; -webkit-tap-highlight-color: transparent; }
+        .prod-foto-mini:active { transform: scale(0.95); }
 
         .variantes-titulo { font-size: 0.65em; text-transform: uppercase; color: #d35400; font-weight: 800; margin: 10px 0 6px 5px; letter-spacing: 1px; }
         .contenedor-chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -76,6 +78,14 @@
 
         .msg-cargando { text-align: center; padding: 20px; color: var(--texto-suave); font-style: italic; }
         .btn-hacer-pedido { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 400px; background: var(--verde); color: white; text-align: center; padding: 18px; border-radius: 18px; font-weight: 900; text-decoration: none; font-size: 1.2em; z-index: 90; box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3); }
+
+        /* --- ESTILOS DEL MODAL (IMAGEN GRANDE) --- */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); backdrop-filter: blur(5px); align-items: center; justify-content: center; flex-direction: column; }
+        .modal-contenido { max-width: 90%; max-height: 80%; border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); transform: scale(0.8); animation: zoomIn 0.3s forwards; }
+        #caption { color: white; margin-top: 15px; font-weight: 600; font-size: 1.2em; text-align: center; padding: 0 20px; }
+        .cerrar-modal { position: absolute; top: 30px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; line-height: 1; }
+        
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -94,6 +104,12 @@
 
 <a href="#" id="btnIrAPedidos" class="btn-hacer-pedido">🛒 HACER PEDIDO</a>
 
+<div id="miModal" class="modal" onclick="this.style.display='none'">
+    <span class="cerrar-modal">&times;</span>
+    <img class="modal-contenido" id="imgGrande">
+    <div id="caption"></div>
+</div>
+
 <script>
     const config = { 
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
@@ -108,6 +124,17 @@
     let catAct = "todo";
 
     window.onload = () => { cargarConfig(); cargarCats(); cargarLocales(); };
+
+    // FUNCIÓN PARA ABRIR EL MODAL
+    function abrirImagen(url, nombre) {
+        const modal = document.getElementById("miModal");
+        const img = document.getElementById("imgGrande");
+        const cap = document.getElementById("caption");
+        
+        modal.style.display = "flex";
+        img.src = url;
+        cap.innerText = nombre;
+    }
 
     function cargarConfig() {
         db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
@@ -164,7 +191,7 @@
         document.querySelectorAll('.local-card').forEach(card => card.classList.remove('open'));
         if(!abierto) { 
             c.classList.add('open'); 
-            box.innerHTML = `<div class="msg-cargando">⏳ Cargando menú, espere un segundo...</div>`;
+            box.innerHTML = `<div class="msg-cargando">⏳ Cargando menú...</div>`;
             cargarProds(id); 
         }
     }
@@ -195,7 +222,7 @@
                             ${p.descripcion ? `<div class="prod-desc">${p.descripcion}</div>` : ''}
                             ${chips}
                         </div>
-                        ${p.urlImagen ? `<img src="${p.urlImagen}" class="prod-foto-mini" alt="${p.nombre}">` : ''}
+                        ${p.urlImagen ? `<img src="${p.urlImagen}" class="prod-foto-mini" alt="${p.nombre}" onclick="abrirImagen('${p.urlImagen}', '${p.nombre}')">` : ''}
                     </div>
                 </div>`;
             });
