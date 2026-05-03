@@ -407,7 +407,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // ENLACE CORREGIDO: Sin errores de sintaxis y con parámetro de marcador exacto (q=lat,lng)
+            // CORRECCIÓN FINAL: Símbolo $ añadido y formato de búsqueda forzada (q=lat,lng)
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
@@ -419,5 +419,4 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-                    </script>
-                    
+</script>
