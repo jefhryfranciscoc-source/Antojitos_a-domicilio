@@ -12,8 +12,12 @@
         .hidden { display: none !important; }
         .card { background: white; padding: 10px 20px 25px 20px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 500px; margin: auto; position: relative; }
         .horario-tag { display: block; text-align: center; font-size: 0.75em; padding: 5px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
+        
+        /* ESTADOS DE COLORES */
         .abierto { background: #e8f5e9; color: #2e7d32; }
         .cerrado { background: #ffebee; color: #c62828; }
+        .pausado { background: #fff9db; color: #d35400; } /* Nuevo estado amarillo */
+
         h2 { color: var(--naranja); text-align: center; margin-bottom: 5px; }
         .nav-menu { display: flex; gap: 5px; margin-bottom: 15px; }
         .btn-nav { flex: 1; padding: 10px; border-radius: 12px; border: none; font-size: 0.8em; font-weight: bold; cursor: pointer; transition: 0.3s; background: #eee; color: #666; }
@@ -47,7 +51,8 @@
 </head>
 <body>
 <div class="card">
-    <div id="statusHorario" class="horario-tag">Cargando...</div>
+    <div id="statusHorario" class="horario-tag abierto">🟢 SERVICIO DISPONIBLE</div>
+    
     <div id="menuNavegacion" class="nav-menu">
         <button id="navCliente" class="btn-nav active" onclick="switchView('cliente')">👤 MODO CLIENTE</button>
         <button id="navRepartidor" class="btn-nav" onclick="switchView('repartidor_login')">🚴 MODO REPARTIDOR</button>
@@ -141,7 +146,7 @@
     
     let servicioSeleccionado = "MANDADO";
     let coordsCliente = null;
-    let tiendaAbierta = false;
+    let tiendaAbierta = false; // Maneja el cierre manual (Rojo/Verde)
     let esRepartidor = false;
     let idRepartidor = null;
     let numeroAdminEmpleo = "";
@@ -169,6 +174,7 @@
         if(savedRepartidor) autoVerificar(savedRepartidor);
     };
 
+    // FUNCIÓN ACTUALIZADA: Controla el aviso de "No hay repartidores" y el BANNER AMARILLO automático
     function vigilarRepartidores() {
         db.collection("usuarios")
             .where("rol", "==", "REPARTIDOR")
@@ -176,7 +182,20 @@
             .onSnapshot(snap => {
                 const aviso = document.getElementById('avisoNoRepartidores');
                 const btnPedir = document.getElementById('btnPedirFinal');
+                const statusTag = document.getElementById('statusHorario');
                 
+                // Lógica del Banner Amarillo Automático
+                if (tiendaAbierta) {
+                    if (snap.empty) {
+                        statusTag.innerText = "🟡 SERVICIO PAUSADO - No hay repartidores";
+                        statusTag.className = "horario-tag pausado";
+                    } else {
+                        statusTag.innerText = "🟢 SERVICIO DISPONIBLE";
+                        statusTag.className = "horario-tag abierto";
+                    }
+                }
+
+                // Lógica del botón de pedido
                 if (snap.empty) {
                     if(aviso) aviso.classList.remove('hidden');
                     if(btnPedir) {
@@ -206,9 +225,16 @@
             if(doc.exists) {
                 const datos = doc.data();
                 tiendaAbierta = datos.abierto;
-                document.getElementById('statusHorario').innerText = tiendaAbierta ? "🟢 SERVICIO DISPONIBLE" : "🔴 CERRADO";
-                document.getElementById('statusHorario').className = "horario-tag " + (tiendaAbierta ? "abierto" : "cerrado");
                 
+                const statusTag = document.getElementById('statusHorario');
+                
+                // Si está cerrado manualmente, siempre será ROJO
+                if (!tiendaAbierta) {
+                    statusTag.innerText = "🔴 CERRADO";
+                    statusTag.className = "horario-tag cerrado";
+                } 
+                // Si está abierto, la función vigilarRepartidores() decidirá si es Verde o Amarillo
+
                 if(datos.telefonoAdmin) {
                     numeroAdminEmpleo = datos.telefonoAdmin;
                     const linkGral = document.getElementById('linkGralRecluta');
@@ -337,22 +363,16 @@
         });
     }
 
-    // FUNCIÓN ACTUALIZADA: Oculta el aviso de espera al encontrar señal
     function obtenerGPS() {
         if (!navigator.geolocation) return;
         navigator.geolocation.watchPosition((pos) => {
             coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            
-            // Actualizamos indicadores visuales
             document.getElementById('indicadorGPS').className = "status-gps gps-listo";
             document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
             document.getElementById('puntoGps').className = "dot dot-verde";
-            
-            // OCULTAR EL AVISO DE ESPERA DE 15 SEGUNDOS
             const avisoEspera = document.getElementById('avisoEsperaGPS');
             if(avisoEspera) avisoEspera.classList.add('hidden');
             
-            // Re-evaluar disponibilidad de repartidores para habilitar el botón
             db.collection("usuarios")
                 .where("rol", "==", "REPARTIDOR")
                 .where("disponible", "==", true)
@@ -364,7 +384,6 @@
                         btn.style.background = "#e67e22";
                     }
                 });
-
         }, (error) => {
             setTimeout(obtenerGPS, 3000);
         }, { enableHighAccuracy: true });
@@ -405,5 +424,4 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-                </script>
-                
+</script>
