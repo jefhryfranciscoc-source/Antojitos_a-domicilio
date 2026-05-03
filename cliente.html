@@ -222,12 +222,10 @@
                 const datos = doc.data();
                 tiendaAbierta = datos.abierto;
                 const statusTag = document.getElementById('statusHorario');
-                
                 if (!tiendaAbierta) {
                     statusTag.innerText = "🔴 CERRADO";
                     statusTag.className = "horario-tag cerrado";
                 } 
-
                 if(datos.telefonoAdmin) {
                     numeroAdminEmpleo = datos.telefonoAdmin;
                     const linkGral = document.getElementById('linkGralRecluta');
@@ -238,7 +236,6 @@
                         linkErr.href = `https://wa.me/505${numeroAdminEmpleo}`;
                     }
                 }
-
                 const btnProd = document.getElementById('btnVerProductos');
                 if(datos.linkProductos && datos.linkProductos.trim() !== "") {
                     btnProd.href = datos.linkProductos;
@@ -246,7 +243,6 @@
                 } else {
                     btnProd.classList.add('hidden');
                 }
-
                 if(datos.ejemploMandado) ejemplosAdmin.MANDADO = datos.ejemploMandado;
                 if(datos.ejemploComida) ejemplosAdmin.COMIDA = datos.ejemploComida;
                 if(datos.ejemploEmpleo) ejemplosAdmin.EMPLEO = datos.ejemploEmpleo;
@@ -356,14 +352,25 @@
         });
     }
 
-    // RESTAURADA LÓGICA DE ALTA PRECISIÓN
+    // CONFIGURACIÓN DE GPS DE GRADO PROFESIONAL
     function obtenerGPS() {
         if (!navigator.geolocation) return;
+        
+        const geoOptions = {
+            enableHighAccuracy: true, // Obliga al uso de hardware GPS
+            timeout: 20000,           // Más tiempo para estabilizar
+            maximumAge: 0             // Siempre datos frescos
+        };
+
         navigator.geolocation.watchPosition((pos) => {
             coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            
             document.getElementById('indicadorGPS').className = "status-gps gps-listo";
             document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
             document.getElementById('puntoGps').className = "dot dot-verde";
+            
+            const avisoEspera = document.getElementById('avisoEsperaGPS');
+            if(avisoEspera) avisoEspera.classList.add('hidden');
             
             db.collection("usuarios")
                 .where("rol", "==", "REPARTIDOR")
@@ -371,14 +378,16 @@
                 .get().then(snap => {
                     if(!snap.empty && tiendaAbierta) {
                         const btn = document.getElementById('btnPedirFinal');
-                        btn.disabled = false;
-                        btn.innerText = "🚀 ENVIAR SOLICITUD";
-                        btn.style.background = "#e67e22";
+                        if(btn) {
+                            btn.disabled = false;
+                            btn.innerText = "🚀 ENVIAR SOLICITUD";
+                            btn.style.background = "#e67e22";
+                        }
                     }
                 });
         }, (error) => {
             setTimeout(obtenerGPS, 3000);
-        }, { enableHighAccuracy: true });
+        }, geoOptions);
     }
 
     async function lanzarPedido() {
@@ -388,17 +397,13 @@
         const desc = document.getElementById('detallePedido').value;
 
         if(!nom || !tel || !dir || !desc) return alert("Completa los campos.");
-        if(!coordsCliente) return alert("Esperando señal GPS...");
+        if(!coordsCliente) return alert("Esperando señal GPS precisa...");
         
         localStorage.setItem('ant_nom', nom);
         localStorage.setItem('ant_tel', tel);
 
         try {
-            const snapRepartidores = await db.collection("usuarios")
-                .where("rol", "==", "REPARTIDOR")
-                .where("disponible", "==", true)
-                .get();
-
+            const snapRepartidores = await db.collection("usuarios").where("rol", "==", "REPARTIDOR").where("disponible", "==", true).get();
             if (snapRepartidores.empty) return alert("No hay repartidores activos.");
             
             const lista = snapRepartidores.docs;
@@ -410,8 +415,9 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // ENLACE CORREGIDO: Sintaxis limpia para Google Maps exacto
+            // ESTE ES EL LINK QUE MARCA EL PIN EXACTO (Formato de búsqueda por coordenadas)
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
+            
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
             window.location.href = `https://wa.me/505${elegido.telefono}?text=${msg}`;
@@ -419,7 +425,6 @@
             document.getElementById('vistaPedido').classList.add('hidden');
             document.getElementById('pantallaEstado').classList.remove('hidden');
 
-        } catch(e) { alert("Error de conexión."); }
+        } catch(e) { console.error(e); alert("Error de red."); }
     }
-            </script>
-            
+</script>
