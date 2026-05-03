@@ -352,14 +352,14 @@
         });
     }
 
-    // --- CORRECCIÓN: GPS DE ALTA PRECISIÓN ---
+    // --- MEJORA: GPS DE ALTA PRECISIÓN ---
     function obtenerGPS() {
         if (!navigator.geolocation) return;
         
         const geoOptions = {
-            enableHighAccuracy: true, // Fuerza el uso de GPS real, no solo redes
-            timeout: 15000,           // Espera hasta 15 segundos
-            maximumAge: 0             // No utiliza ubicaciones cacheadas/viejas
+            enableHighAccuracy: true, 
+            timeout: 10000,           
+            maximumAge: 0             
         };
 
         navigator.geolocation.watchPosition((pos) => {
@@ -386,20 +386,19 @@
                     }
                 });
         }, (error) => {
-            console.warn("Reintentando señal GPS...");
             setTimeout(obtenerGPS, 3000);
         }, geoOptions);
     }
 
-    // --- CORRECCIÓN: LANZAMIENTO DE PEDIDO Y LINK DE MAPA ---
+    // --- CORRECCIÓN CRÍTICA: LINK DE MAPA Y ASIGNACIÓN ---
     async function lanzarPedido() {
         const nom = document.getElementById('nombreCli').value;
         const tel = document.getElementById('telCli').value;
         const dir = document.getElementById('dirCli').value;
         const desc = document.getElementById('detallePedido').value;
 
-        if(!nom || !tel || !dir || !desc) return alert("Completa todos los campos.");
-        if(!coordsCliente) return alert("⚠️ No podemos enviar el pedido sin tu ubicación GPS exacta.");
+        if(!nom || !tel || !dir || !desc) return alert("Completa los campos.");
+        if(!coordsCliente) return alert("⚠️ Esperando señal GPS precisa...");
         
         localStorage.setItem('ant_nom', nom);
         localStorage.setItem('ant_tel', tel);
@@ -410,7 +409,7 @@
                 .where("disponible", "==", true)
                 .get();
 
-            if (snapRepartidores.empty) return alert("Lo sentimos, no hay repartidores activos en este momento.");
+            if (snapRepartidores.empty) return alert("No hay repartidores activos.");
             
             const lista = snapRepartidores.docs;
             const elegido = lista[Math.floor(Math.random() * lista.length)].data();
@@ -421,7 +420,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // LINK CORREGIDO PARA MÁXIMA COMPATIBILIDAD (GOOGLE MAPS)
+            // CORRECCIÓN SINTAXIS: Link universal de Google Maps
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
@@ -433,8 +432,7 @@
 
         } catch(e) { 
             console.error(e);
-            alert("Error de conexión con la base de datos."); 
+            alert("Error de red."); 
         }
     }
-        </script>
-        
+</script>
