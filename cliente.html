@@ -31,13 +31,16 @@
         .resumen { background: #fff9f2; border: 1.5px dashed var(--naranja); padding: 20px; border-radius: 20px; margin-top: 20px; }
         input, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-family: inherit; }
         .area-total { text-align: center; margin-top: 20px; padding: 15px; background: #fff; border-radius: 15px; }
-        .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-pedir:disabled { background: #ccc; }
+        .btn-pedir { background: var(--naranja); color: white; border: none; width: 100%; padding: 18px; border-radius: 18px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        .btn-pedir:disabled { background: #ccc; cursor: not-allowed; }
         .btn-productos { display: block; background: #fff; color: var(--naranja); border: 2px solid var(--naranja); width: 100%; padding: 15px; border-radius: 18px; font-size: 1em; font-weight: bold; text-decoration: none; text-align: center; margin-top: 15px; box-sizing: border-box; transition: 0.3s; }
         .btn-productos:active { background: #fff3e0; }
         .repartidor-panel { background: #ebf5ff; border: 2px solid var(--azul); padding: 20px; border-radius: 20px; margin-top: 10px; text-align: center; }
         .status-toggle { padding: 15px; border-radius: 15px; font-weight: bold; border: none; width: 100%; cursor: pointer; margin-bottom: 15px; font-size: 1em; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .lista-colegas { font-size: 0.85em; color: #555; text-align: left; background: #f9fbff; padding: 12px; border-radius: 15px; margin-top: 15px; border: 1px solid #d0e1f9; }
+        
+        /* Estilo para el aviso de no hay repartidores */
+        #avisoNoRepartidores { background: #ff7675; color: white; padding: 12px; border-radius: 15px; margin-bottom: 15px; text-align: center; font-weight: bold; border: 2px solid #d63031; font-size: 0.9em; animation: parpadeo 2s infinite; }
     </style>
 </head>
 <body>
@@ -67,10 +70,15 @@
             <textarea id="dirCli" placeholder="Dirección exacta o punto de referencia" rows="2"></textarea>
         </div>
         <div class="area-total">
+            <div id="avisoNoRepartidores" class="hidden">
+                ⚠️ Lo sentimos, no hay repartidores activos en este momento.
+            </div>
+            
             <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()" disabled>⚠️ ACTIVA TU GPS</button>
             <a id="btnVerProductos" href="#" target="_blank" class="btn-productos hidden">🛒 Ver Precios y Productos</a>
         </div>
     </div>
+
     <div id="vistaLoginRepartidor" class="hidden" style="text-align: center; padding: 20px;">
         <p style="color: var(--azul); font-weight: bold; font-size: 1.1em;">Área de Repartidores</p>
         <div style="background: #fff; padding: 15px; border-radius: 15px; border: 1px solid #ddd;">
@@ -90,6 +98,7 @@
         </div>
         <button class="btn-nav" style="margin-top: 20px; width: 100%; padding: 12px;" onclick="switchView('cliente')">⬅️ Volver a modo cliente</button>
     </div>
+
     <div id="vistaRepartidor" class="hidden">
         <div class="repartidor-panel">
             <p><strong>Panel de Repartidor</strong></p>
@@ -101,12 +110,15 @@
             <button class="btn-nav" style="margin-top: 15px; width: 100%; font-size: 0.8em;" onclick="switchView('cliente')">Cerrar mi panel (Volver)</button>
         </div>
     </div>
+
     <div id="pantallaEstado" class="hidden" style="text-align:center; padding: 40px 10px;">
         <h3>¡Solicitud Enviada! 🚀</h3>
         <p id="msgConfirmacion">Se ha notificado a un repartidor activo.</p>
         <button class="btn-pedir" onclick="location.reload()">NUEVA SOLICITUD</button>
     </div>
 </div>
+</body>
+</html>
 <script>
     const firebaseConfig = { 
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
@@ -136,17 +148,56 @@
     window.onload = () => {
         obtenerGPS();
         cargarConfig();
+        vigilarRepartidores(); 
+        
         const savedNom = localStorage.getItem('ant_nom') || "";
         const savedTel = localStorage.getItem('ant_tel') || "";
         document.getElementById('nombreCli').value = savedNom;
         document.getElementById('telCli').value = savedTel;
 
-        // ACTUALIZACIÓN DEL PLACEHOLDER DE DIRECCIÓN:
         document.getElementById('dirCli').placeholder = "Ayúdanos a encontrarte Ej: (casa color amarillo, puerta (portón) negro frente a X local)";
 
         const savedRepartidor = localStorage.getItem('ant_tel_repartidor');
         if(savedRepartidor) autoVerificar(savedRepartidor);
     };
+
+    // FUNCIÓN ACTUALIZADA: Alterna estados entre disponibilidad y GPS
+    function vigilarRepartidores() {
+        db.collection("usuarios")
+            .where("rol", "==", "REPARTIDOR")
+            .where("disponible", "==", true)
+            .onSnapshot(snap => {
+                const aviso = document.getElementById('avisoNoRepartidores');
+                const btnPedir = document.getElementById('btnPedirFinal');
+                
+                if (snap.empty) {
+                    // Si NO hay repartidores: Prioridad máxima al aviso de error
+                    if(aviso) aviso.classList.remove('hidden');
+                    if(btnPedir) {
+                        btnPedir.disabled = true;
+                        btnPedir.innerText = "🚫 NO HAY REPARTIDORES";
+                        btnPedir.style.background = "#95a5a6";
+                    }
+                } else {
+                    // Si HAY repartidores: Quitamos aviso y revisamos GPS
+                    if(aviso) aviso.classList.add('hidden');
+                    
+                    if(btnPedir) {
+                        if(!coordsCliente) {
+                            // Si no hay GPS todavía
+                            btnPedir.disabled = true;
+                            btnPedir.innerText = "⚠️ ACTIVA TU GPS";
+                            btnPedir.style.background = "#ccc";
+                        } else if(tiendaAbierta) {
+                            // Si hay GPS y tienda abierta
+                            btnPedir.disabled = false;
+                            btnPedir.innerText = "🚀 ENVIAR SOLICITUD";
+                            btnPedir.style.background = "#e67e22";
+                        }
+                    }
+                }
+            });
+    }
 
     function cargarConfig() { 
         db.collection("configuracion").doc("global").onSnapshot(doc => { 
@@ -291,10 +342,20 @@
             document.getElementById('indicadorGPS').className = "status-gps gps-listo";
             document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
             document.getElementById('puntoGps').className = "dot dot-verde";
-            if(tiendaAbierta) {
-                document.getElementById('btnPedirFinal').disabled = false;
-                document.getElementById('btnPedirFinal').innerText = "🚀 ENVIAR SOLICITUD";
-            }
+            
+            // Forzamos una re-evaluación del botón al obtener coordenadas
+            const snapRepartidores = db.collection("usuarios")
+                .where("rol", "==", "REPARTIDOR")
+                .where("disponible", "==", true)
+                .get().then(snap => {
+                    if(!snap.empty && tiendaAbierta) {
+                        const btn = document.getElementById('btnPedirFinal');
+                        btn.disabled = false;
+                        btnPedir.innerText = "🚀 ENVIAR SOLICITUD";
+                        btnPedir.style.background = "#e67e22";
+                    }
+                });
+
         }, (error) => {
             setTimeout(obtenerGPS, 3000);
         }, { enableHighAccuracy: true });
@@ -335,5 +396,5 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-            </script>
-            
+        </script>
+        
