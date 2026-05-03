@@ -18,10 +18,10 @@
         .nav-menu { display: flex; gap: 5px; margin-bottom: 15px; }
         .btn-nav { flex: 1; padding: 10px; border-radius: 12px; border: none; font-size: 0.8em; font-weight: bold; cursor: pointer; transition: 0.3s; background: #eee; color: #666; }
         .btn-nav.active { background: var(--azul); color: white; }
-        .status-gps { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px; margin-bottom: 15px; border-radius: 15px; font-weight: bold; }
-        .gps-buscando { background: #ffeaa7; color: #d35400; border: 2px solid #f1c40f; }
+        .status-gps { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; margin-bottom: 15px; border-radius: 15px; font-weight: bold; font-size: 0.9em; }
+        .gps-buscando { background: #ffeaa7; color: #d35400; border: 1px solid #f1c40f; }
         .gps-listo { background: #d1fad7; color: #27ae60; border: 1px solid #2ecc71; }
-        .dot { height: 12px; width: 12px; border-radius: 50%; display: inline-block; }
+        .dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
         .dot-rojo { background-color: #e74c3c; animation: parpadeo 1s infinite; }
         .dot-verde { background-color: #2ecc71; }
         @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
@@ -51,15 +51,8 @@
     <div id="vistaPedido">
         <div id="indicadorGPS" class="status-gps gps-buscando">
             <span id="puntoGps" class="dot dot-rojo"></span>
-            <div style="display: flex; flex-direction: column; text-align: left;">
-                <span id="textoGps" style="font-size: 1.1em; font-weight: 800;">Buscando señal GPS...</span>
-                <span style="font-size: 0.85em; font-weight: bold; margin-bottom: 4px;">(Espera unos 15 segundos)</span>
-                <span id="avisoGpsActivo" style="font-size: 0.95em; color: #b33939; background: white; padding: 2px 6px; border-radius: 6px; border: 1px solid #e74c3c;">
-                    ⚠️ Asegúrate de tener tu GPS activo
-                </span>
-            </div>
+            <span id="textoGps">Buscando señal GPS...</span>
         </div>
-
         <p style="text-align:center; font-size:0.9em; color:#666; font-weight:bold;">¿Qué servicio necesitas hoy?</p>
         <div class="grid-servicios">
             <button type="button" id="btn-MANDADO" onclick="seleccionarServicio('MANDADO')" class="btn-servicio activo" style="color:#1565c0;">📦 Mandado / Tienda</button>
@@ -78,7 +71,6 @@
             <a id="btnVerProductos" href="#" target="_blank" class="btn-productos hidden">🛒 Ver Precios y Productos</a>
         </div>
     </div>
-
     <div id="vistaLoginRepartidor" class="hidden" style="text-align: center; padding: 20px;">
         <p style="color: var(--azul); font-weight: bold; font-size: 1.1em;">Área de Repartidores</p>
         <div style="background: #fff; padding: 15px; border-radius: 15px; border: 1px solid #ddd;">
@@ -115,8 +107,6 @@
         <button class="btn-pedir" onclick="location.reload()">NUEVA SOLICITUD</button>
     </div>
 </div>
-</body>
-</html>
 <script>
     const firebaseConfig = { 
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
@@ -150,9 +140,9 @@
         const savedTel = localStorage.getItem('ant_tel') || "";
         document.getElementById('nombreCli').value = savedNom;
         document.getElementById('telCli').value = savedTel;
-        
-        // AGREGADO: Placeholder editado con la frase solicitada
-        document.getElementById('dirCli').placeholder = "Ayúdanos a encontrarte Ej: (Casa color amarillo, portón negro o frente a la pulpería X)";
+
+        // ACTUALIZACIÓN DEL PLACEHOLDER DE DIRECCIÓN:
+        document.getElementById('dirCli').placeholder = "Ayúdanos a encontrarte Ej: (casa color amarillo, puerta (portón) negro frente a X local)";
 
         const savedRepartidor = localStorage.getItem('ant_tel_repartidor');
         if(savedRepartidor) autoVerificar(savedRepartidor);
@@ -345,5 +335,5 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-                                                                                               </script>
-                                                                                               
+            </script>
+            
