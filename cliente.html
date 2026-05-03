@@ -171,6 +171,7 @@
         if(savedRepartidor) autoVerificar(savedRepartidor);
     };
 
+    // LÓGICA DE ESTADOS: Cerrado, Pausado o Abierto
     function vigilarEstadoServicio() {
         db.collection("usuarios")
             .where("rol", "==", "REPARTIDOR")
@@ -180,7 +181,6 @@
                 const btnPedir = document.getElementById('btnPedirFinal');
                 
                 if (!tiendaAbierta) {
-                    // ESTADO: CERRADO
                     statusTag.innerText = "🔴 CERRADO";
                     statusTag.className = "horario-tag cerrado";
                     btnPedir.disabled = true;
@@ -188,7 +188,6 @@
                     btnPedir.style.background = "#95a5a6";
                 } 
                 else if (snap.empty) {
-                    // ESTADO: PAUSADO
                     statusTag.innerText = "🟡 SERVICIO PAUSADO";
                     statusTag.className = "horario-tag pausado";
                     statusTag.style.background = "#fff9c4";
@@ -199,7 +198,6 @@
                     btnPedir.style.background = "#95a5a6";
                 } 
                 else {
-                    // ESTADO: DISPONIBLE / ABIERTO
                     statusTag.innerText = "🟢 ABIERTO";
                     statusTag.className = "horario-tag abierto";
                     statusTag.style.background = "#e8f5e9";
@@ -395,7 +393,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // CORRECCIÓN DE SINTAXIS AQUÍ:
+            // CORRECCIÓN FINAL DE ENLACE:
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
@@ -406,5 +404,5 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-                    </script>
-                    
+                        </script>
+                        
