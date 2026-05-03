@@ -101,7 +101,49 @@
         <p style="font-size: 0.8em; color: #666; margin-top: 0;">Si está cerrado, los clientes no podrán enviar pedidos.</p>
     </div>
 
+    <div class="card">
+        <h3 style="color: var(--naranja); margin-top: 0;">🔗 Catálogo / Menú Web</h3>
+        <div class="input-group">
+            <label>Link de Productos y Precios</label>
+            <input type="url" id="confLinkProductos" placeholder="Ej: https://mi-menu.com">
+            <small style="color: gray; margin-top: 5px;">Este enlace se conectará con la app del cliente para que puedan ver qué ordenar.</small>
+        </div>
     </div>
+
+    <div class="card">
+        <h3 style="color: var(--naranja); margin-top: 0;">✍️ Ejemplos para Clientes</h3>
+        <p style="font-size: 0.8em; color: #666; margin-bottom: 15px;">Escribe los ejemplos que verán los clientes en el cuadro de texto según el servicio seleccionado.</p>
+        
+        <div class="input-group">
+            <label>Sugerencia para Mandados</label>
+            <input type="text" id="exMandado" placeholder="Ej: Necesito un galón de pintura...">
+        </div>
+        <div class="input-group">
+            <label>Sugerencia para Comida</label>
+            <input type="text" id="exComida" placeholder="Ej: Quiero 2 servicios de tajadas...">
+        </div>
+        <div class="input-group">
+            <label>Sugerencia para Empleos</label>
+            <input type="text" id="exEmpleo" placeholder="Ej: Necesito ayuda limpiando el patio...">
+        </div>
+        <div class="input-group">
+            <label>Sugerencia para Otros</label>
+            <input type="text" id="exOtro" placeholder="Ej: ¿Pueden instalar una lámpara?...">
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 style="color: var(--naranja); margin-top: 0;">📞 Reclutamiento</h3>
+        
+        <div class="input-group">
+            <label>Número para solicitar empleo</label>
+            <input type="tel" id="confTelefonoAdmin" placeholder="Ej: 88888888 (Sin +505)">
+            <small style="color: gray; margin-top: 5px;">Este número aparecerá a quienes intenten entrar al panel de repartidor sin estar registrados.</small>
+        </div>
+
+        <button onclick="guardarAjustesRapido()" class="btn-save">GUARDAR AJUSTES</button>
+    </div>
+</div>
 
 <a href="#" id="btnIrACatalogoAdmin" class="btn-salto-admin">
     <span>📦</span> Ir a Catálogo
@@ -151,7 +193,7 @@
     async function guardarLinkAdmin() {
         const link = document.getElementById('nuevoLinkAdmin').value;
         if(!link) return alert("Ingresa un link válido");
-        // Guardamos en el documento "global" para este panel
+        
         await db.collection("configuracion").doc("global").set({ linkAdminCatalogo: link }, { merge: true });
         alert("¡Link de navegación actualizado!");
         cerrarConfig();
@@ -161,18 +203,21 @@
         db.collection("configuracion").doc("global").onSnapshot(doc => {
             if(doc.exists) {
                 const d = doc.data();
+                
+                // Cargar ajustes generales
                 document.getElementById('toggleAbierto').checked = d.abierto || false;
                 document.getElementById('estadoTexto').innerText = d.abierto ? "ABIERTO" : "CERRADO";
                 document.getElementById('estadoTexto').style.color = d.abierto ? "green" : "red";
-                document.getElementById('confTelefonoAdmin').value = d.telefonoAdmin || "";
-                document.getElementById('confLinkProductos').value = d.linkProductos || "";
+                
+                if(document.getElementById('confTelefonoAdmin')) document.getElementById('confTelefonoAdmin').value = d.telefonoAdmin || "";
+                if(document.getElementById('confLinkProductos')) document.getElementById('confLinkProductos').value = d.linkProductos || "";
                 
                 // Actualiza el link del botón de salto
                 const linkSalto = d.linkAdminCatalogo || "#";
                 document.getElementById('btnIrACatalogoAdmin').href = linkSalto;
                 document.getElementById('nuevoLinkAdmin').value = linkSalto;
 
-                // Cargar ejemplos (Omitido aquí por brevedad, pero mantenlo en tu código)
+                // Cargar ejemplos
                 if(document.getElementById('exMandado')) document.getElementById('exMandado').value = d.ejemploMandado || "";
                 if(document.getElementById('exComida')) document.getElementById('exComida').value = d.ejemploComida || "";
                 if(document.getElementById('exEmpleo')) document.getElementById('exEmpleo').value = d.ejemploEmpleo || "";
@@ -182,7 +227,7 @@
     }
 
     // ==========================================
-    // TUS FUNCIONES ORIGINALES (NO TOCAR)
+    // TUS FUNCIONES ORIGINALES COMPLETAS
     // ==========================================
     async function guardarAjustesRapido() {
         const telAdmin = document.getElementById('confTelefonoAdmin').value.trim();
@@ -222,7 +267,70 @@
         });
     }
 
-    // ... (El resto de funciones: eliminarPedido, eliminarTodoElHistorial, escucharRepartidores, agregar, editar, eliminar repartidor y openTab se mantienen exactamente igual a tu código original)
+    async function eliminarPedido(id) { 
+        if(confirm("¿Borrar este pedido del historial?")) { await db.collection("pedidos").doc(id).delete(); }
+    }
+
+    async function eliminarTodoElHistorial() {
+        if(confirm("⚠️ ¿Borrar ABSOLUTAMENTE TODO el historial?")) {
+            const snap = await db.collection("pedidos").get();
+            const batch = db.batch();
+            snap.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            alert("Historial limpio.");
+        }
+    }
+
+    function escucharRepartidores() {
+        db.collection("usuarios").where("rol", "==", "REPARTIDOR").onSnapshot(snap => {
+            const cont = document.getElementById('listaRepartidores');
+            cont.innerHTML = "";
+            snap.forEach(doc => {
+                const u = doc.data();
+                cont.innerHTML += `
+                    <div class="card" style="border-left: 5px solid ${u.disponible ? 'var(--verde)' : 'gray'};">
+                        <div style="display:flex; justify-content:space-between;">
+                            <b>👤 ${u.nombre}</b>
+                            <span style="font-size:0.8em; font-weight:bold; color:${u.disponible ? 'green' : 'gray'}">
+                                ${u.disponible ? '🟢 ONLINE' : '⚪ OFFLINE'}
+                            </span>
+                        </div>
+                        📱 ${u.telefono}<br>
+                        <div style="display:flex; gap:5px; margin-top:10px;">
+                            <button class="btn-edit" style="flex:1;" onclick="editarRepartidor('${doc.id}', '${u.nombre}', '${u.telefono}')">Editar</button>
+                            <button class="btn-borrar" style="flex:1;" onclick="eliminarRepartidor('${doc.id}')">Eliminar</button>
+                        </div>
+                    </div>`;
+            });
+        });
+    }
+
+    async function agregarRepartidor() {
+        const nom = prompt("Nombre del repartidor:");
+        const tel = prompt("Número de WhatsApp (Sin +505):");
+        if(nom && tel) {
+            await db.collection("usuarios").add({ nombre: nom, telefono: tel.trim(), rol: "REPARTIDOR", disponible: false });
+        }
+    }
+
+    async function editarRepartidor(id, n, t) {
+        const nom = prompt("Nombre:", n);
+        const tel = prompt("Número:", t);
+        if(nom && tel) {
+            await db.collection("usuarios").doc(id).update({ nombre: nom, telefono: tel.trim() });
+        }
+    }
+
+    async function eliminarRepartidor(id) {
+        if(confirm("¿Eliminar repartidor?")) { await db.collection("usuarios").doc(id).delete(); }
+    }
+
+    function openTab(evt, id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        evt.currentTarget.classList.add('active');
+    }
 </script>
 </body>
 </html>
