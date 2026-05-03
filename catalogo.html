@@ -7,86 +7,126 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <style>
-        :root { --naranja: #e67e22; --azul: #3498db; --oscuro: #2c3e50; --gris: #f4f7f6; --verde: #2ecc71; }
+        :root { --naranja: #e67e22; --azul: #3498db; --oscuro: #1a252f; --texto-suave: #7f8c8d; --verde: #2ecc71; --fondo-desc: #f8f9fa; }
         
         body { 
-            font-family: 'Segoe UI', sans-serif; 
-            background: #f0f2f5; 
-            margin: 0; 
-            padding: 10px; 
-            padding-bottom: 100px; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #fdfdfd; 
+            margin: 0; padding: 10px; padding-bottom: 120px; 
+            color: var(--oscuro); overflow-x: hidden;
         }
         
-        header { text-align: center; padding: 15px 10px; }
+        header { text-align: center; padding: 20px 10px 10px 10px; }
+        header h2 { font-size: 2em; font-weight: 900; letter-spacing: -1px; margin-bottom: 2px; }
         
+        #mensajeBienvenida {
+            font-size: 1.15em; color: var(--oscuro); font-weight: 700;
+            margin-bottom: 10px; display: block; padding: 0 15px; line-height: 1.2;
+        }
+
+        header .eslogan-bajo { font-size: 0.95em; color: var(--texto-suave); font-weight: 500; }
+        
+        .tabs-wrapper {
+            position: sticky; top: 0; background: rgba(253, 253, 253, 0.95);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 100; margin: 0 -10px; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
         .tabs-container { 
-            display: flex; gap: 10px; overflow-x: auto; padding: 10px 5px; 
-            white-space: nowrap; scrollbar-width: none; 
-            position: sticky; top: 0; background: #f0f2f5; z-index: 10;
+            display: flex; gap: 10px; overflow-x: auto; padding: 0 20px;
+            white-space: nowrap; scrollbar-width: none; scroll-behavior: smooth;
         }
+        
+        .tabs-container::-webkit-scrollbar { display: none; } 
         
         .tab-btn { 
-            padding: 10px 22px; border-radius: 25px; border: none; 
-            background: #fff; color: #666; font-weight: bold; 
-            cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            transition: 0.3s; 
+            padding: 10px 20px; border-radius: 25px; border: 1.5px solid #eee; 
+            background: #fff; color: #555; font-weight: 700; cursor: pointer; 
+            transition: 0.3s; font-size: 0.9em; flex-shrink: 0;
         }
-        .tab-btn.active { background: var(--naranja); color: white; }
 
-        .contenedor-locales { max-width: 600px; margin: auto; display: grid; gap: 12px; margin-top: 10px; }
+        .tab-btn.active { 
+            background: var(--naranja); color: white; border-color: var(--naranja);
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+        }
+
+        .contenedor-locales { max-width: 600px; margin: auto; display: grid; gap: 20px; margin-top: 20px; }
         
         .local-card { 
-            background: white; border-radius: 18px; overflow: hidden; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; 
-            transition: 0.3s; 
+            background: white; border-radius: 20px; overflow: hidden; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;
+            border-left: 6px solid var(--naranja); transition: 0.3s; 
         }
-        
-        .local-header { padding: 18px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-        .local-info { display: flex; align-items: center; gap: 15px; }
-        .local-icon { font-size: 1.6em; width: 40px; text-align: center; }
-        .local-nombre { font-weight: bold; color: var(--oscuro); font-size: 1.1em; }
-        .arrow { transition: 0.3s; color: #bbb; font-size: 0.8em; }
-        
-        .local-card.open { border: 1.5px solid var(--naranja); box-shadow: 0 4px 15px rgba(230, 126, 34, 0.15); }
-        .local-card.open .arrow { transform: rotate(180deg); color: var(--naranja); }
 
-        .productos-lista { display: none; padding: 5px 18px 18px 18px; border-top: 1px solid #f9f9f9; background: #fff; }
+        .local-header { padding: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .local-info { display: flex; align-items: center; gap: 15px; }
+        .local-nombre { font-weight: 800; color: var(--oscuro); font-size: 1.3em; }
+        .arrow { transition: 0.3s; color: var(--naranja); font-weight: bold; }
+        
+        .local-card.open .arrow { transform: rotate(180deg); }
+        .productos-lista { display: none; padding: 5px 15px 20px 15px; background: #fff; }
         .local-card.open .productos-lista { display: block; animation: fadeIn 0.3s ease; }
         
         .producto-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 12px 0; border-bottom: 1px solid #f4f4f4; 
+            display: flex; flex-direction: column; padding: 16px; 
+            margin-bottom: 12px; background: #fff; border-radius: 18px;
+            border: 1px solid #eee; box-shadow: 0 3px 6px rgba(0,0,0,0.03);
         }
-        .producto-item:last-child { border: none; }
-        .prod-info b { color: #333; font-size: 0.95em; display: block; }
-        .prod-info span { font-size: 0.75em; color: #999; }
-        .prod-precio { color: var(--naranja); font-weight: 800; font-size: 1em; white-space: nowrap; margin-left: 10px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .prod-superior { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        
+        .prod-info-base b { color: #000; font-size: 1.2em; display: block; font-weight: 800; }
+        
+        .prod-desc { 
+            font-size: 0.95em; color: #444; background: var(--fondo-desc);
+            padding: 10px 12px; border-radius: 12px; border-left: 3px solid #ddd; margin-bottom: 10px;
+        }
+
+        .prod-precio { 
+            background: var(--naranja); color: #fff; font-weight: 900; 
+            font-size: 1.15em; padding: 8px 14px; border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(230, 126, 34, 0.25);
+        }
+
+        /* DISEÑO DE MARCAS DISCRETAS */
+        .variantes-container {
+            display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px;
+        }
+        
+        .chip-variante {
+            background: #fff; border: 1px solid var(--naranja); color: var(--oscuro);
+            padding: 4px 10px; border-radius: 8px; font-size: 0.85em; font-weight: 700;
+            display: flex; gap: 5px; align-items: center;
+        }
+
+        .chip-variante span { color: var(--naranja); font-weight: 900; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .btn-hacer-pedido {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 85%; max-width: 380px; background: var(--verde); color: white;
-            text-align: center; padding: 16px; border-radius: 50px; font-weight: bold;
-            text-decoration: none; font-size: 1.1em; box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3);
-            z-index: 90; display: flex; align-items: center; justify-content: center; gap: 10px;
+            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
+            width: 85%; max-width: 400px; background: var(--verde); color: white;
+            text-align: center; padding: 18px; border-radius: 18px; font-weight: 900;
+            text-decoration: none; font-size: 1.2em; z-index: 90;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
     </style>
 </head>
 <body>
 
 <header>
-    <h2 style="color: var(--naranja); margin: 0;">Antojitos Pueblo Nuevo 🏪</h2>
-    <p style="font-size: 0.8em; color: #777; margin-top: 5px;">Explora los locales de nuestro pueblo</p>
+    <h2 style="color: var(--naranja);">Antojitos Pueblo Nuevo 🏪</h2>
+    <span id="mensajeBienvenida">Cargando mensaje...</span>
+    <p class="eslogan-bajo">Lo que quieras, cuando quieras</p>
 </header>
 
-<div id="tabsCategorias" class="tabs-container">
-    <button class="tab-btn active" onclick="seleccionarTab('todo', this)">✨ Todo</button>
+<div class="tabs-wrapper">
+    <div id="tabsCategorias" class="tabs-container">
+        <button class="tab-btn active" onclick="seleccionarTab('todo', this)">✨ Todo</button>
+    </div>
 </div>
 
-<div id="listaLocales" class="contenedor-locales">
-    <p style="text-align: center; color: #999; padding: 40px;">Cargando catálogo...</p>
-</div>
+<div id="listaLocales" class="contenedor-locales"></div>
 
 <a href="#" id="btnIrAPedidos" class="btn-hacer-pedido">
     <span>🛒</span> HACER PEDIDO
@@ -107,10 +147,18 @@
     let categoriaActual = "todo";
 
     window.onload = () => {
-        cargarCategorias();
-        cargarLocales();
-        cargarConfigGlobal();
+        cargarCategorias(); cargarLocales(); cargarConfigGlobal();
     };
+
+    function cargarConfigGlobal() {
+        db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
+            if(doc.exists) {
+                const data = doc.data();
+                document.getElementById('btnIrAPedidos').href = data.linkPedido || "#";
+                document.getElementById('mensajeBienvenida').innerText = data.mensajeCabecera || "¡Bienvenidos!";
+            }
+        });
+    }
 
     function cargarCategorias() {
         db.collection("categorias").orderBy("nombre").onSnapshot(snap => {
@@ -133,12 +181,9 @@
     function cargarLocales() {
         let query = db.collection("locales");
         if (categoriaActual !== "todo") query = query.where("categoriaId", "==", categoriaActual);
-
         query.onSnapshot(snap => {
             const container = document.getElementById('listaLocales');
             container.innerHTML = "";
-            if (snap.empty) container.innerHTML = "<p style='text-align:center; color:#999;'>No hay locales aquí aún.</p>";
-
             snap.forEach(doc => {
                 const local = doc.data();
                 const id = doc.id;
@@ -151,9 +196,7 @@
                             </div>
                             <span class="arrow">▼</span>
                         </div>
-                        <div id="lista-prod-${id}" class="productos-lista">
-                            <p style="font-size:0.8em; color:#ccc; text-align:center;">Cargando menú...</p>
-                        </div>
+                        <div id="lista-prod-${id}" class="productos-lista"></div>
                     </div>`;
             });
         });
@@ -161,9 +204,9 @@
 
     function toggleAcordeon(id) {
         const card = document.getElementById(`card-${id}`);
-        const estaAbierto = card.classList.contains('open');
+        const abierto = card.classList.contains('open');
         document.querySelectorAll('.local-card').forEach(c => c.classList.remove('open'));
-        if (!estaAbierto) {
+        if (!abierto) {
             card.classList.add('open');
             cargarProductosDelLocal(id);
         }
@@ -173,30 +216,35 @@
         const box = document.getElementById(`lista-prod-${localId}`);
         db.collection("productos").where("localId", "==", localId).onSnapshot(snap => {
             box.innerHTML = "";
-            if (snap.empty) {
-                box.innerHTML = "<p style='text-align:center; font-size:0.8em; color:#999;'>Menú no disponible por ahora.</p>";
-                return;
-            }
             snap.forEach(doc => {
                 const p = doc.data();
+                
+                // Lógica para procesar marcas (variantes)
+                let variantesHtml = "";
+                if (p.variantes) {
+                    const lista = p.variantes.split(","); 
+                    variantesHtml = '<div class="variantes-container">';
+                    lista.forEach(v => {
+                        const parts = v.split(":"); // Separa nombre de precio
+                        variantesHtml += `<div class="chip-variante">${parts[0]} <span>${parts[1] || ''}</span></div>`;
+                    });
+                    variantesHtml += '</div>';
+                }
+
                 box.innerHTML += `
                     <div class="producto-item">
-                        <div class="prod-info">
-                            <b>${p.nombre}</b>
-                            ${p.descripcion ? `<span>${p.descripcion}</span>` : ''}
+                        <div class="prod-superior">
+                            <div class="prod-info-base">
+                                <b>${p.nombre}</b>
+                            </div>
+                            <div class="prod-precio">${p.precio}</div>
                         </div>
-                        <div class="prod-precio">${p.precio}</div>
+                        ${p.descripcion ? `<div class="prod-desc">${p.descripcion}</div>` : ''}
+                        ${variantesHtml}
                     </div>`;
             });
-        });
-    }
-
-    function cargarConfigGlobal() {
-        db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
-            if(doc.exists) document.getElementById('btnIrAPedidos').href = doc.data().linkPedido || "#";
         });
     }
 </script>
 </body>
 </html>
-          
