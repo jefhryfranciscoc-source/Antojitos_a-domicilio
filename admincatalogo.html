@@ -7,87 +7,143 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <style>
-        :root { --naranja: #e67e22; --azul: #3498db; --oscuro: #2c3e50; --rojo: #e74c3c; --verde: #2ecc71; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 800px; margin: auto; }
-        h2 { color: var(--oscuro); border-left: 5px solid var(--naranja); padding-left: 10px; }
+        :root { --naranja: #e67e22; --azul: #3498db; --oscuro: #1a252f; --rojo: #e74c3c; --verde: #2ecc71; --fondo: #f0f2f5; }
         
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .grid-form { display: grid; gap: 10px; margin-bottom: 15px; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--fondo); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 700px; margin: auto; }
         
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
-        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.3s; }
-        
-        .btn-add { background: var(--azul); color: white; padding: 12px; width: 100%; }
-        .btn-add:hover { background: #2980b9; }
-        
-        /* Listas de gestión */
-        .item-admin { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; background: #fff; }
-        .item-admin:last-child { border: none; }
-        .acciones { display: flex; gap: 5px; }
-        .btn-edit { background: #f1c40f; color: white; padding: 5px 10px; font-size: 12px; }
-        .btn-del { background: var(--rojo); color: white; padding: 5px 10px; font-size: 12px; }
+        h1 { text-align: center; color: var(--oscuro); font-weight: 900; margin-bottom: 30px; }
 
-        /* Etiquetas */
-        label { font-size: 12px; font-weight: bold; color: #777; margin-bottom: 5px; display: block; }
-        .tab-indicator { font-size: 0.8em; background: #eee; padding: 2px 8px; border-radius: 10px; }
+        /* ESTILO DE SECCIONES COLAPSABLES */
+        .seccion-admin { 
+            background: white; border-radius: 16px; margin-bottom: 15px; 
+            overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            border: 1px solid #e1e4e8;
+        }
+
+        .seccion-header { 
+            padding: 18px 22px; background: white; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center;
+            transition: 0.3s;
+        }
+        .seccion-header:hover { background: #fcfcfc; }
+        .seccion-header h2 { margin: 0; font-size: 1.1em; color: var(--oscuro); display: flex; align-items: center; gap: 10px; }
+        .seccion-header .icono-flecha { font-size: 0.8em; transition: 0.3s; color: var(--texto-suave); }
+
+        .seccion-body { display: none; padding: 22px; border-top: 1px solid #f0f0f0; }
+        .seccion-admin.abierta .seccion-body { display: block; }
+        .seccion-admin.abierta .icono-flecha { transform: rotate(180deg); }
+
+        /* FORMULARIOS LIMPIOS */
+        .grid-form { display: grid; gap: 12px; }
+        label { font-size: 11px; font-weight: 800; color: #95a5a6; text-transform: uppercase; margin-bottom: -5px; }
+        
+        input, select, textarea { 
+            width: 100%; padding: 12px; border: 1.5px solid #edf0f2; 
+            border-radius: 10px; box-sizing: border-box; font-size: 14px; 
+            background: #f8fafb; transition: 0.3s;
+        }
+        input:focus { border-color: var(--azul); outline: none; background: #fff; }
+        
+        button { cursor: pointer; border: none; border-radius: 10px; font-weight: 700; transition: 0.3s; }
+        .btn-principal { background: var(--azul); color: white; padding: 14px; width: 100%; font-size: 14px; }
+        .btn-principal:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3); }
+
+        /* LISTAS COMPACTAS */
+        .scroll-lista { max-height: 250px; overflow-y: auto; margin-top: 15px; border-top: 1px solid #f0f0f0; }
+        .item-admin { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 12px; border-bottom: 1px solid #f9f9f9; font-size: 14px;
+        }
+        .item-admin b { color: var(--oscuro); }
+        .acciones { display: flex; gap: 8px; }
+        .btn-mini { padding: 6px 10px; font-size: 11px; border-radius: 6px; }
+        .btn-edit { background: #fef9e7; color: #f1c40f; }
+        .btn-del { background: #fdedec; color: var(--rojo); }
+
+        .hint { font-size: 11px; color: #999; font-weight: 400; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>⚙️ Panel Administrador</h1>
-    <p>Gestiona categorías, locales y productos en tiempo real.</p>
+    <h1>⚙️ Mi Tienda Admin</h1>
 
-    <div class="card">
-        <h2>Enlace de Pedidos</h2>
-        <label>URL a donde lleva el botón verde del cliente:</label>
-        <div class="grid-form">
-            <input type="text" id="linkPedido" placeholder="https://tu-app-de-pedidos.com">
-            <button class="btn-add" style="background: var(--verde);" onclick="guardarConfig()">💾 Guardar Enlace</button>
+    <div class="seccion-admin" id="sec-config">
+        <div class="seccion-header" onclick="toggleSeccion('sec-config')">
+            <h2><span>🎨</span> Diseño y Cabecera</h2>
+            <span class="icono-flecha">▼</span>
+        </div>
+        <div class="seccion-body">
+            <div class="grid-form">
+                <label>Título del Catálogo</label>
+                <input type="text" id="mensajeCabecera" placeholder="Ej: Antojitos Pueblo Nuevo">
+                <label>Aviso o Tutorial Secundario</label>
+                <textarea id="textoSugerencia" placeholder="Sugerencias o avisos importantes..."></textarea>
+                <label>Link de Pedidos (WhatsApp)</label>
+                <input type="text" id="linkPedido" placeholder="Enlace de la app o chat">
+                <button class="btn-principal" style="background: var(--verde);" onclick="guardarConfig()">💾 Guardar Cambios</button>
+            </div>
         </div>
     </div>
 
-    <div class="card">
-        <h2>1. Gestionar Pestañas</h2>
-        <div class="grid-form">
-            <input type="hidden" id="idCat">
-            <input type="text" id="nombreCat" placeholder="Nombre de la pestaña (ej: Comida)">
-            <button class="btn-add" id="btnCat" onclick="procesarCategoria()">➕ Agregar Pestaña</button>
+    <div class="seccion-admin" id="sec-cat">
+        <div class="seccion-header" onclick="toggleSeccion('sec-cat')">
+            <h2><span>📑</span> Pestañas (Categorías)</h2>
+            <span class="icono-flecha">▼</span>
         </div>
-        <div id="listaCategoriasAdmin"></div>
+        <div class="seccion-body">
+            <div class="grid-form">
+                <input type="hidden" id="idCat">
+                <input type="text" id="nombreCat" placeholder="Nombre de la pestaña (ej: Bebidas)">
+                <button class="btn-principal" id="btnCat" onclick="procesarCategoria()">➕ Guardar Pestaña</button>
+            </div>
+            <div class="scroll-lista" id="listaCategoriasAdmin"></div>
+        </div>
     </div>
 
-    <div class="card">
-        <h2>2. Gestionar Locales</h2>
-        <div class="grid-form">
-            <input type="hidden" id="idLocal">
-            <label>Seleccionar Pestaña:</label>
-            <select id="selCatLocal"></select>
-            <input type="text" id="nombreLocal" placeholder="Nombre del Negocio">
-            <input type="text" id="emojiLocal" placeholder="Emoji representativo (ej: 🍕)">
-            <button class="btn-add" id="btnLocal" onclick="procesarLocal()">🏘️ Guardar Local</button>
+    <div class="seccion-admin" id="sec-local">
+        <div class="seccion-header" onclick="toggleSeccion('sec-local')">
+            <h2><span>🏘️</span> Negocios (Locales)</h2>
+            <span class="icono-flecha">▼</span>
         </div>
-        <div id="listaLocalesAdmin"></div>
+        <div class="seccion-body">
+            <div class="grid-form">
+                <input type="hidden" id="idLocal">
+                <label>Pestaña donde aparecerá:</label>
+                <select id="selCatLocal"></select>
+                <input type="text" id="nombreLocal" placeholder="Nombre del Negocio">
+                <input type="text" id="emojiLocal" placeholder="Emoji (ej: 🍕)">
+                <button class="btn-principal" id="btnLocal" onclick="procesarLocal()">🏘️ Guardar Local</button>
+            </div>
+            <div class="scroll-lista" id="listaLocalesAdmin"></div>
+        </div>
     </div>
 
-    <div class="card">
-        <h2>3. Menú de Productos</h2>
-        <div class="grid-form">
-            <input type="hidden" id="idProd">
-            <label>Seleccionar Local:</label>
-            <select id="selLocalProd"></select>
-            <input type="text" id="nombreProd" placeholder="Nombre del Producto">
-            <input type="text" id="precioProd" placeholder="Precio (ej: C$ 120)">
-            <input type="text" id="descProd" placeholder="Nota corta (opcional)">
-            <button class="btn-add" id="btnProd" onclick="procesarProducto()">🍔 Guardar Producto</button>
+    <div class="seccion-admin" id="sec-prod">
+        <div class="seccion-header" onclick="toggleSeccion('sec-prod')">
+            <h2><span>🍔</span> Menú de Productos</h2>
+            <span class="icono-flecha">▼</span>
         </div>
-        <div id="listaProductosAdmin"></div>
+        <div class="seccion-body">
+            <div class="grid-form">
+                <input type="hidden" id="idProd">
+                <label>Selecciona el Negocio:</label>
+                <select id="selLocalProd"></select>
+                <input type="text" id="nombreProd" placeholder="¿Qué vendes?">
+                <input type="text" id="precioProd" placeholder="Precio (ej: C$ 100)">
+                <label>Ingredientes / Extras <span class="hint">(Se lee debajo del nombre)</span></label>
+                <textarea id="descProd" placeholder="Ej: Con salsa blanca y extra queso"></textarea>
+                <label>Marcas y Precios <span class="hint">(Formato: Marca:Precio, ...)</span></label>
+                <input type="text" id="variantesProd" placeholder="Coca:50, Pepsi:40">
+                <button class="btn-principal" id="btnProd" onclick="procesarProducto()">🍔 Guardar Producto</button>
+            </div>
+            <div class="scroll-lista" id="listaProductosAdmin"></div>
+        </div>
     </div>
 </div>
 
 <script>
-    // MISMA CONFIGURACIÓN DE TU FIREBASE
     const firebaseConfig = { 
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
         authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
@@ -100,35 +156,45 @@
     const db = firebase.firestore();
 
     window.onload = () => {
-        cargarConfig();
-        listarCategorias();
-        listarLocales();
-        listarProductos();
+        cargarConfig(); listarCategorias(); listarLocales(); listarProductos();
     };
 
-    // --- LÓGICA DE CONFIGURACIÓN ---
-    async function guardarConfig() {
-        const link = document.getElementById('linkPedido').value;
-        await db.collection("configuracion").doc("catalogo").set({ linkPedido: link }, { merge: true });
-        alert("Enlace actualizado");
+    // FUNCIÓN PARA ABRIR/CERRAR SECCIONES
+    function toggleSeccion(id) {
+        const elemento = document.getElementById(id);
+        const estaAbierta = elemento.classList.contains('abierta');
+        // Cerrar todas las demás para limpiar la vista
+        document.querySelectorAll('.seccion-admin').forEach(s => s.classList.remove('abierta'));
+        if (!estaAbierta) elemento.classList.add('abierta');
     }
+
+    // --- LÓGICA FIREBASE (Mantenemos tu lógica funcional) ---
+    async function guardarConfig() {
+        const data = {
+            mensajeCabecera: document.getElementById('mensajeCabecera').value,
+            textoSugerencia: document.getElementById('textoSugerencia').value,
+            linkPedido: document.getElementById('linkPedido').value
+        };
+        await db.collection("configuracion").doc("catalogo").set(data, { merge: true });
+        alert("¡Ajustes guardados!");
+    }
+
     function cargarConfig() {
         db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
-            if(doc.exists) document.getElementById('linkPedido').value = doc.data().linkPedido || "";
+            if(doc.exists) {
+                const d = doc.data();
+                document.getElementById('mensajeCabecera').value = d.mensajeCabecera || "";
+                document.getElementById('textoSugerencia').value = d.textoSugerencia || "";
+                document.getElementById('linkPedido').value = d.linkPedido || "";
+            }
         });
     }
 
-    // --- LÓGICA DE CATEGORÍAS ---
     async function procesarCategoria() {
         const id = document.getElementById('idCat').value;
         const nombre = document.getElementById('nombreCat').value;
         if(!nombre) return;
-
-        if(id) {
-            await db.collection("categorias").doc(id).update({ nombre });
-        } else {
-            await db.collection("categorias").add({ nombre });
-        }
+        id ? await db.collection("categorias").doc(id).update({ nombre }) : await db.collection("categorias").add({ nombre });
         limpiarCat();
     }
 
@@ -140,29 +206,24 @@
             snap.forEach(doc => {
                 const c = doc.data();
                 select.innerHTML += `<option value="${doc.id}">${c.nombre}</option>`;
-                list.innerHTML += `
-                    <div class="item-admin">
-                        <span><b>${c.nombre}</b></span>
-                        <div class="acciones">
-                            <button class="btn-edit" onclick="editarCat('${doc.id}','${c.nombre}')">Editar</button>
-                            <button class="btn-del" onclick="eliminar('categorias','${doc.id}')">Borrar</button>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="item-admin"><span><b>${c.nombre}</b></span>
+                    <div class="acciones">
+                        <button class="btn-mini btn-edit" onclick="editarCat('${doc.id}','${c.nombre}')">Editar</button>
+                        <button class="btn-mini btn-del" onclick="eliminar('categorias','${doc.id}')">Eliminar</button>
+                    </div></div>`;
             });
         });
     }
 
-    // --- LÓGICA DE LOCALES ---
     async function procesarLocal() {
         const id = document.getElementById('idLocal').value;
-        const nombre = document.getElementById('nombreLocal').value;
-        const emoji = document.getElementById('emojiLocal').value;
-        const catId = document.getElementById('selCatLocal').value;
-        if(!nombre || !catId) return;
-
-        const data = { nombre, emoji, categoriaId: catId };
-        if(id) await db.collection("locales").doc(id).update(data);
-        else await db.collection("locales").add(data);
+        const data = { 
+            nombre: document.getElementById('nombreLocal').value, 
+            emoji: document.getElementById('emojiLocal').value, 
+            categoriaId: document.getElementById('selCatLocal').value 
+        };
+        if(!data.nombre) return;
+        id ? await db.collection("locales").doc(id).update(data) : await db.collection("locales").add(data);
         limpiarLocal();
     }
 
@@ -174,31 +235,26 @@
             snap.forEach(doc => {
                 const l = doc.data();
                 select.innerHTML += `<option value="${doc.id}">${l.nombre}</option>`;
-                list.innerHTML += `
-                    <div class="item-admin">
-                        <span>${l.emoji} <b>${l.nombre}</b></span>
-                        <div class="acciones">
-                            <button class="btn-edit" onclick="editarLocal('${doc.id}','${l.nombre}','${l.emoji}','${l.categoriaId}')">Editar</button>
-                            <button class="btn-del" onclick="eliminar('locales','${doc.id}')">Borrar</button>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="item-admin"><span>${l.emoji} <b>${l.nombre}</b></span>
+                    <div class="acciones">
+                        <button class="btn-mini btn-edit" onclick="editarLocal('${doc.id}','${l.nombre}','${l.emoji}','${l.categoriaId}')">Editar</button>
+                        <button class="btn-mini btn-del" onclick="eliminar('locales','${doc.id}')">Eliminar</button>
+                    </div></div>`;
             });
         });
     }
 
-    // --- LÓGICA DE PRODUCTOS ---
     async function procesarProducto() {
         const id = document.getElementById('idProd').value;
-        const localId = document.getElementById('selLocalProd').value;
-        const nombre = document.getElementById('nombreProd').value;
-        const precio = document.getElementById('precioProd').value;
-        const desc = document.getElementById('descProd').value;
-
-        if(!nombre || !precio) return;
-        const data = { localId, nombre, precio, descripcion: desc };
-
-        if(id) await db.collection("productos").doc(id).update(data);
-        else await db.collection("productos").add(data);
+        const data = {
+            localId: document.getElementById('selLocalProd').value,
+            nombre: document.getElementById('nombreProd').value,
+            precio: document.getElementById('precioProd').value,
+            descripcion: document.getElementById('descProd').value,
+            variantes: document.getElementById('variantesProd').value
+        };
+        if(!data.nombre) return;
+        id ? await db.collection("productos").doc(id).update(data) : await db.collection("productos").add(data);
         limpiarProd();
     }
 
@@ -208,53 +264,35 @@
             list.innerHTML = "";
             snap.forEach(doc => {
                 const p = doc.data();
-                list.innerHTML += `
-                    <div class="item-admin">
-                        <div><b>${p.nombre}</b> - <span style="color:var(--naranja)">${p.precio}</span></div>
-                        <div class="acciones">
-                            <button class="btn-edit" onclick="editarProd('${doc.id}','${p.nombre}','${p.precio}','${p.descripcion}','${p.localId}')">Editar</button>
-                            <button class="btn-del" onclick="eliminar('productos','${doc.id}')">Borrar</button>
-                        </div>
-                    </div>`;
+                list.innerHTML += `<div class="item-admin">
+                    <div><b>${p.nombre}</b> <small>${p.precio}</small></div>
+                    <div class="acciones">
+                        <button class="btn-mini btn-edit" onclick="editarProd('${doc.id}',\`${p.nombre}\`,'${p.precio}',\`${p.descripcion || ''}\`,'${p.localId}','${p.variantes || ''}')">Editar</button>
+                        <button class="btn-mini btn-del" onclick="eliminar('productos','${doc.id}')">Borrar</button>
+                    </div></div>`;
             });
         });
     }
 
-    // --- FUNCIONES DE APOYO (Editar, Eliminar, Limpiar) ---
-    function eliminar(coleccion, id) {
-        if(confirm("¿Estás seguro? Esta acción no se puede deshacer.")) {
-            db.collection(coleccion).doc(id).delete();
-        }
+    function eliminar(col, id) { if(confirm("¿Eliminar permanentemente?")) db.collection(col).doc(id).delete(); }
+
+    function editarCat(id, n) { document.getElementById('idCat').value = id; document.getElementById('nombreCat').value = n; document.getElementById('btnCat').innerText = "💾 Actualizar"; }
+    function editarLocal(id, n, e, c) { 
+        document.getElementById('idLocal').value = id; document.getElementById('nombreLocal').value = n; 
+        document.getElementById('emojiLocal').value = e; document.getElementById('selCatLocal').value = c;
+        document.getElementById('btnLocal').innerText = "💾 Actualizar";
+    }
+    function editarProd(id, n, p, d, l, v) {
+        document.getElementById('idProd').value = id; document.getElementById('nombreProd').value = n;
+        document.getElementById('precioProd').value = p; document.getElementById('descProd').value = d;
+        document.getElementById('selLocalProd').value = l; document.getElementById('variantesProd').value = v;
+        document.getElementById('btnProd').innerText = "💾 Actualizar";
     }
 
-    function editarCat(id, nombre) {
-        document.getElementById('idCat').value = id;
-        document.getElementById('nombreCat').value = nombre;
-        document.getElementById('btnCat').innerText = "💾 Actualizar Pestaña";
-    }
-
-    function editarLocal(id, nombre, emoji, catId) {
-        document.getElementById('idLocal').value = id;
-        document.getElementById('nombreLocal').value = nombre;
-        document.getElementById('emojiLocal').value = emoji;
-        document.getElementById('selCatLocal').value = catId;
-        document.getElementById('btnLocal').innerText = "💾 Actualizar Local";
-    }
-
-    function editarProd(id, nombre, precio, desc, localId) {
-        document.getElementById('idProd').value = id;
-        document.getElementById('nombreProd').value = nombre;
-        document.getElementById('precioProd').value = precio;
-        document.getElementById('descProd').value = desc;
-        document.getElementById('selLocalProd').value = localId;
-        document.getElementById('btnProd').innerText = "💾 Actualizar Producto";
-    }
-
-    function limpiarCat() { document.getElementById('idCat').value = ""; document.getElementById('nombreCat').value = ""; document.getElementById('btnCat').innerText = "➕ Agregar Pestaña"; }
-    function limpiarLocal() { document.getElementById('idLocal').value = ""; document.getElementById('nombreLocal').value = ""; document.getElementById('emojiLocal').value = ""; document.getElementById('btnLocal').innerText = "🏘️ Guardar Local"; }
-    function limpiarProd() { document.getElementById('idProd').value = ""; document.getElementById('nombreProd').value = ""; document.getElementById('precioProd').value = ""; document.getElementById('descProd').value = ""; document.getElementById('btnProd').innerText = "🍔 Guardar Producto"; }
+    function limpiarCat() { document.getElementById('idCat').value = ""; document.getElementById('nombreCat').value = ""; document.getElementById('btnCat').innerText = "➕ Guardar"; }
+    function limpiarLocal() { document.getElementById('idLocal').value = ""; document.getElementById('nombreLocal').value = ""; document.getElementById('emojiLocal').value = ""; document.getElementById('btnLocal').innerText = "🏘️ Guardar"; }
+    function limpiarProd() { document.getElementById('idProd').value = ""; document.getElementById('nombreProd').value = ""; document.getElementById('precioProd').value = ""; document.getElementById('descProd').value = ""; document.getElementById('variantesProd').value = ""; document.getElementById('btnProd').innerText = "🍔 Guardar"; }
 </script>
 
 </body>
 </html>
-
