@@ -175,9 +175,9 @@
 
     function vigilarRepartidores() {
         db.collection("usuarios")
-        .where("rol", "==", "REPARTIDOR")
-        .where("disponible", "==", true)
-        .onSnapshot(snap => {
+       .where("rol", "==", "REPARTIDOR")
+       .where("disponible", "==", true)
+       .onSnapshot(snap => {
                 const aviso = document.getElementById('avisoNoRepartidores');
                 const btnPedir = document.getElementById('btnPedirFinal');
                 const statusTag = document.getElementById('statusHorario');
@@ -438,9 +438,9 @@
         if(avisoEspera) avisoEspera.classList.add('hidden');
 
         db.collection("usuarios")
-        .where("rol", "==", "REPARTIDOR")
-        .where("disponible", "==", true)
-        .get().then(snap => {
+       .where("rol", "==", "REPARTIDOR")
+       .where("disponible", "==", true)
+       .get().then(snap => {
                 if(!snap.empty && tiendaAbierta) {
                     const btn = document.getElementById('btnPedirFinal');
                     btn.disabled = false;
@@ -483,9 +483,10 @@
                 precision: coordsCliente.accuracy
             });
 
-            const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}&ll=${coordsCliente.lat},${coordsCliente.lng}&z=20`;
+            // CAMBIO: Este link NO se pierde nunca. El repartidor lo puede abrir 100 veces
+            const mapsLink = `https://www.google.com/maps/place/${coordsCliente.lat},${coordsCliente.lng}/@${coordsCliente.lat},${coordsCliente.lng},20z`;
 
-            const msg = `*NUEVO PEDIDO - ANTOJITOS*\n*Cliente:* ${nom}\n*Teléfono:* ${tel}\n*Servicio:* ${servicioSeleccionado}\n*Detalle:* ${desc}\n*Dirección:* ${dir}\n*Precisión GPS:* ±${Math.round(coordsCliente.accuracy)}m\n*Mapa GPS:* ${mapsLink}`;
+            const msg = `*NUEVO PEDIDO - ANTOJITOS*\n\n*Cliente:* ${nom}\n*Teléfono:* ${tel}\n*Servicio:* ${servicioSeleccionado}\n*Detalle:* ${desc}\n*Dirección:* ${dir}\n*Precisión GPS:* ±${Math.round(coordsCliente.accuracy)}m\n\n*📍 UBICACIÓN EXACTA:* ${mapsLink}`;
 
             window.location.href = `https://wa.me/505${elegido.telefono}?text=${encodeURIComponent(msg)}`;
 
@@ -497,4 +498,4 @@
             alert("Error de conexión.");
         }
     }
-</script>
+            </script>
