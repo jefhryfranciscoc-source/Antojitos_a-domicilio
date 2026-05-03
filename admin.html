@@ -10,7 +10,6 @@
         :root { --naranja: #e67e22; --verde: #2ecc71; --rojo: #e74c3c; --oscuro: #2c3e50; --azul: #3498db; --gris: #f5f6f7; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--gris); margin: 0; padding: 0; }
         
-        /* Título con cursor interactivo para el truco secreto */
         .header { background: var(--oscuro); color: white; padding: 15px; text-align: center; cursor: pointer; user-select: none; }
         
         .tabs { display: flex; gap: 5px; padding: 10px; background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-x: auto; }
@@ -33,7 +32,6 @@
         .input-group label { font-size: 0.9em; font-weight: bold; margin-bottom: 5px; color: var(--oscuro); }
         .input-group input, .input-group textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
         
-        /* --- BOTÓN DE SALTO (VISIBLE) --- */
         .btn-salto-admin {
             position: fixed; bottom: 20px; right: 20px;
             background: var(--naranja); color: white; padding: 12px 20px;
@@ -44,7 +42,6 @@
         }
         .btn-salto-admin:active { transform: scale(0.9); }
 
-        /* --- MODAL CONFIGURACIÓN OCULTA --- */
         #modalConfigSecreta {
             display: none; position: fixed; top: 50%; left: 50%;
             transform: translate(-50%, -50%); background: white;
@@ -145,7 +142,7 @@
     </div>
 </div>
 
-<a href="#" id="btnIrACatalogoAdmin" class="btn-salto-admin">
+<a href="javascript:void(0)" id="btnIrACatalogoAdmin" class="btn-salto-admin" onclick="navegarACatalogo()">
     <span>📦</span> Ir a Catálogo
 </a>
 
@@ -169,11 +166,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    let linkGlobalAdmin = "#";
+
     window.onload = () => { escucharPedidos(); escucharRepartidores(); cargarConfig(); };
 
-    // ==========================================
-    // LÓGICA DE SALTO Y CONFIGURACIÓN OCULTA
-    // ==========================================
     let clicks = 0;
     function detectarClicksSecretos() {
         clicks++;
@@ -191,11 +187,10 @@
     }
 
     async function guardarLinkAdmin() {
-        const link = document.getElementById('nuevoLinkAdmin').value;
+        const link = document.getElementById('nuevoLinkAdmin').value.trim();
         if(!link) return alert("Ingresa un link válido");
-        
         await db.collection("configuracion").doc("global").set({ linkAdminCatalogo: link }, { merge: true });
-        alert("¡Link de navegación actualizado!");
+        alert("¡Enlace actualizado!");
         cerrarConfig();
     }
 
@@ -203,8 +198,6 @@
         db.collection("configuracion").doc("global").onSnapshot(doc => {
             if(doc.exists) {
                 const d = doc.data();
-                
-                // Cargar ajustes generales
                 document.getElementById('toggleAbierto').checked = d.abierto || false;
                 document.getElementById('estadoTexto').innerText = d.abierto ? "ABIERTO" : "CERRADO";
                 document.getElementById('estadoTexto').style.color = d.abierto ? "green" : "red";
@@ -212,12 +205,9 @@
                 if(document.getElementById('confTelefonoAdmin')) document.getElementById('confTelefonoAdmin').value = d.telefonoAdmin || "";
                 if(document.getElementById('confLinkProductos')) document.getElementById('confLinkProductos').value = d.linkProductos || "";
                 
-                // Actualiza el link del botón de salto
-                const linkSalto = d.linkAdminCatalogo || "#";
-                document.getElementById('btnIrACatalogoAdmin').href = linkSalto;
-                document.getElementById('nuevoLinkAdmin').value = linkSalto;
+                linkGlobalAdmin = d.linkAdminCatalogo || "#";
+                document.getElementById('nuevoLinkAdmin').value = linkGlobalAdmin;
 
-                // Cargar ejemplos
                 if(document.getElementById('exMandado')) document.getElementById('exMandado').value = d.ejemploMandado || "";
                 if(document.getElementById('exComida')) document.getElementById('exComida').value = d.ejemploComida || "";
                 if(document.getElementById('exEmpleo')) document.getElementById('exEmpleo').value = d.ejemploEmpleo || "";
@@ -226,16 +216,19 @@
         });
     }
 
-    // ==========================================
-    // TUS FUNCIONES ORIGINALES COMPLETAS
-    // ==========================================
+    function navegarACatalogo() {
+        if(linkGlobalAdmin !== "#") {
+            window.location.href = linkGlobalAdmin;
+        } else {
+            alert("El link no ha sido configurado todavía.");
+        }
+    }
+
     async function guardarAjustesRapido() {
-        const telAdmin = document.getElementById('confTelefonoAdmin').value.trim();
-        const linkProd = document.getElementById('confLinkProductos').value.trim();
         await db.collection("configuracion").doc("global").set({
             abierto: document.getElementById('toggleAbierto').checked,
-            telefonoAdmin: telAdmin,
-            linkProductos: linkProd,
+            telefonoAdmin: document.getElementById('confTelefonoAdmin').value.trim(),
+            linkProductos: document.getElementById('confLinkProductos').value.trim(),
             ejemploMandado: document.getElementById('exMandado').value.trim(),
             ejemploComida: document.getElementById('exComida').value.trim(),
             ejemploEmpleo: document.getElementById('exEmpleo').value.trim(),
@@ -268,11 +261,11 @@
     }
 
     async function eliminarPedido(id) { 
-        if(confirm("¿Borrar este pedido del historial?")) { await db.collection("pedidos").doc(id).delete(); }
+        if(confirm("¿Borrar este pedido?")) { await db.collection("pedidos").doc(id).delete(); }
     }
 
     async function eliminarTodoElHistorial() {
-        if(confirm("⚠️ ¿Borrar ABSOLUTAMENTE TODO el historial?")) {
+        if(confirm("⚠️ ¿Borrar TODO el historial?")) {
             const snap = await db.collection("pedidos").get();
             const batch = db.batch();
             snap.forEach(doc => batch.delete(doc.ref));
@@ -306,8 +299,8 @@
     }
 
     async function agregarRepartidor() {
-        const nom = prompt("Nombre del repartidor:");
-        const tel = prompt("Número de WhatsApp (Sin +505):");
+        const nom = prompt("Nombre:");
+        const tel = prompt("WhatsApp:");
         if(nom && tel) {
             await db.collection("usuarios").add({ nombre: nom, telefono: tel.trim(), rol: "REPARTIDOR", disponible: false });
         }
@@ -316,13 +309,11 @@
     async function editarRepartidor(id, n, t) {
         const nom = prompt("Nombre:", n);
         const tel = prompt("Número:", t);
-        if(nom && tel) {
-            await db.collection("usuarios").doc(id).update({ nombre: nom, telefono: tel.trim() });
-        }
+        if(nom && tel) { await db.collection("usuarios").doc(id).update({ nombre: nom, telefono: tel.trim() }); }
     }
 
     async function eliminarRepartidor(id) {
-        if(confirm("¿Eliminar repartidor?")) { await db.collection("usuarios").doc(id).delete(); }
+        if(confirm("¿Eliminar?")) { await db.collection("usuarios").doc(id).delete(); }
     }
 
     function openTab(evt, id) {
