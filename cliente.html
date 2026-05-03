@@ -25,6 +25,10 @@
         .dot-rojo { background-color: #e74c3c; animation: parpadeo 1s infinite; }
         .dot-verde { background-color: #2ecc71; }
         @keyframes parpadeo { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        
+        /* Nuevo estilo para el aviso de espera GPS */
+        .aviso-espera-gps { background: #ebf5ff; color: #2980b9; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; font-size: 0.85em; border: 1px solid #3498db; line-height: 1.4; }
+
         .grid-servicios { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .btn-servicio { padding: 15px 10px; border-radius: 15px; font-size: 0.85em; font-weight: bold; cursor: pointer; transition: 0.3s; border: 1px solid #ddd; background: white; }
         .btn-servicio.activo { border: 2px solid var(--azul); transform: scale(1.02); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -38,8 +42,6 @@
         .repartidor-panel { background: #ebf5ff; border: 2px solid var(--azul); padding: 20px; border-radius: 20px; margin-top: 10px; text-align: center; }
         .status-toggle { padding: 15px; border-radius: 15px; font-weight: bold; border: none; width: 100%; cursor: pointer; margin-bottom: 15px; font-size: 1em; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         .lista-colegas { font-size: 0.85em; color: #555; text-align: left; background: #f9fbff; padding: 12px; border-radius: 15px; margin-top: 15px; border: 1px solid #d0e1f9; }
-        
-        /* Estilo para el aviso de no hay repartidores */
         #avisoNoRepartidores { background: #ff7675; color: white; padding: 12px; border-radius: 15px; margin-bottom: 15px; text-align: center; font-weight: bold; border: 2px solid #d63031; font-size: 0.9em; animation: parpadeo 2s infinite; }
     </style>
 </head>
@@ -56,6 +58,12 @@
             <span id="puntoGps" class="dot dot-rojo"></span>
             <span id="textoGps">Buscando señal GPS...</span>
         </div>
+
+        <div id="avisoEsperaGPS" class="aviso-espera-gps">
+            ⏳ Por favor, espera 15 segundos... <br>
+            <b>Asegúrate de tener activa tu ubicación (GPS)</b>
+        </div>
+
         <p style="text-align:center; font-size:0.9em; color:#666; font-weight:bold;">¿Qué servicio necesitas hoy?</p>
         <div class="grid-servicios">
             <button type="button" id="btn-MANDADO" onclick="seleccionarServicio('MANDADO')" class="btn-servicio activo" style="color:#1565c0;">📦 Mandado / Tienda</button>
@@ -396,5 +404,5 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-        </script>
-        
+                   </script>
+                   
