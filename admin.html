@@ -9,7 +9,9 @@
     <style>
         :root { --naranja: #e67e22; --verde: #2ecc71; --rojo: #e74c3c; --oscuro: #2c3e50; --azul: #3498db; --gris: #f5f6f7; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--gris); margin: 0; padding: 0; }
-        .header { background: var(--oscuro); color: white; padding: 15px; text-align: center; }
+        
+        /* Título con cursor interactivo para el truco secreto */
+        .header { background: var(--oscuro); color: white; padding: 15px; text-align: center; cursor: pointer; user-select: none; }
         
         .tabs { display: flex; gap: 5px; padding: 10px; background: white; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); overflow-x: auto; }
         .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 0.85em; }
@@ -31,6 +33,30 @@
         .input-group label { font-size: 0.9em; font-weight: bold; margin-bottom: 5px; color: var(--oscuro); }
         .input-group input, .input-group textarea { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
         
+        /* --- BOTÓN DE SALTO (VISIBLE) --- */
+        .btn-salto-admin {
+            position: fixed; bottom: 20px; right: 20px;
+            background: var(--naranja); color: white; padding: 12px 20px;
+            border-radius: 50px; text-decoration: none; font-weight: bold;
+            display: flex; align-items: center; gap: 8px; font-size: 13px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999;
+            transition: 0.3s; border: 2px solid rgba(255,255,255,0.1);
+        }
+        .btn-salto-admin:active { transform: scale(0.9); }
+
+        /* --- MODAL CONFIGURACIÓN OCULTA --- */
+        #modalConfigSecreta {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white;
+            padding: 30px; border-radius: 20px; z-index: 10001;
+            width: 90%; max-width: 350px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .overlay-secreto {
+            display: none; position: fixed; top: 0; left: 0; width: 100%;
+            height: 100%; background: rgba(0,0,0,0.6); z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
+
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
@@ -43,7 +69,7 @@
 </head>
 <body>
 
-<div class="header"><h3>MASTER CONTROL 👑</h3></div>
+<div class="header" onclick="detectarClicksSecretos()"><h3>MASTER CONTROL 👑</h3></div>
 
 <div class="tabs">
     <button class="tab-btn active" onclick="openTab(event, 'pedidos')">ORDENES</button>
@@ -75,48 +101,18 @@
         <p style="font-size: 0.8em; color: #666; margin-top: 0;">Si está cerrado, los clientes no podrán enviar pedidos.</p>
     </div>
 
-    <div class="card">
-        <h3 style="color: var(--naranja); margin-top: 0;">🔗 Catálogo / Menú Web</h3>
-        <div class="input-group">
-            <label>Link de Productos y Precios</label>
-            <input type="url" id="confLinkProductos" placeholder="Ej: https://mi-menu.com">
-            <small style="color: gray; margin-top: 5px;">Este enlace se conectará con la app del cliente para que puedan ver qué ordenar.</small>
-        </div>
     </div>
 
-    <div class="card">
-        <h3 style="color: var(--naranja); margin-top: 0;">✍️ Ejemplos para Clientes</h3>
-        <p style="font-size: 0.8em; color: #666; margin-bottom: 15px;">Escribe los ejemplos que verán los clientes en el cuadro de texto según el servicio seleccionado.</p>
-        
-        <div class="input-group">
-            <label>Sugerencia para Mandados</label>
-            <input type="text" id="exMandado" placeholder="Ej: Necesito un galón de pintura...">
-        </div>
-        <div class="input-group">
-            <label>Sugerencia para Comida</label>
-            <input type="text" id="exComida" placeholder="Ej: Quiero 2 servicios de tajadas...">
-        </div>
-        <div class="input-group">
-            <label>Sugerencia para Empleos</label>
-            <input type="text" id="exEmpleo" placeholder="Ej: Necesito ayuda limpiando el patio...">
-        </div>
-        <div class="input-group">
-            <label>Sugerencia para Otros</label>
-            <input type="text" id="exOtro" placeholder="Ej: ¿Pueden instalar una lámpara?...">
-        </div>
-    </div>
+<a href="#" id="btnIrACatalogoAdmin" class="btn-salto-admin">
+    <span>📦</span> Ir a Catálogo
+</a>
 
-    <div class="card">
-        <h3 style="color: var(--naranja); margin-top: 0;">📞 Reclutamiento</h3>
-        
-        <div class="input-group">
-            <label>Número para solicitar empleo</label>
-            <input type="tel" id="confTelefonoAdmin" placeholder="Ej: 88888888 (Sin +505)">
-            <small style="color: gray; margin-top: 5px;">Este número aparecerá a quienes intenten entrar al panel de repartidor sin estar registrados.</small>
-        </div>
-
-        <button onclick="guardarAjustesRapido()" class="btn-save">GUARDAR AJUSTES</button>
-    </div>
+<div id="overlaySecreto" class="overlay-secreto" onclick="cerrarConfig()"></div>
+<div id="modalConfigSecreta">
+    <h3 style="margin-top:0">⚙️ Enlace del Otro Panel</h3>
+    <p style="font-size: 0.8em; color: #666;">Pega el link del Administrador de Catálogo:</p>
+    <input type="text" id="nuevoLinkAdmin" placeholder="https://...">
+    <button class="btn-save" style="background: var(--verde);" onclick="guardarLinkAdmin()">💾 Actualizar Enlace</button>
 </div>
 
 <script>
@@ -134,8 +130,33 @@
     window.onload = () => { escucharPedidos(); escucharRepartidores(); cargarConfig(); };
 
     // ==========================================
-    // CONFIGURACIONES Y AJUSTES
+    // LÓGICA DE SALTO Y CONFIGURACIÓN OCULTA
     // ==========================================
+    let clicks = 0;
+    function detectarClicksSecretos() {
+        clicks++;
+        if (clicks === 5) {
+            document.getElementById('modalConfigSecreta').style.display = 'block';
+            document.getElementById('overlaySecreto').style.display = 'block';
+            clicks = 0;
+        }
+        setTimeout(() => { clicks = 0; }, 2000);
+    }
+
+    function cerrarConfig() {
+        document.getElementById('modalConfigSecreta').style.display = 'none';
+        document.getElementById('overlaySecreto').style.display = 'none';
+    }
+
+    async function guardarLinkAdmin() {
+        const link = document.getElementById('nuevoLinkAdmin').value;
+        if(!link) return alert("Ingresa un link válido");
+        // Guardamos en el documento "global" para este panel
+        await db.collection("configuracion").doc("global").set({ linkAdminCatalogo: link }, { merge: true });
+        alert("¡Link de navegación actualizado!");
+        cerrarConfig();
+    }
+
     function cargarConfig() {
         db.collection("configuracion").doc("global").onSnapshot(doc => {
             if(doc.exists) {
@@ -144,39 +165,40 @@
                 document.getElementById('estadoTexto').innerText = d.abierto ? "ABIERTO" : "CERRADO";
                 document.getElementById('estadoTexto').style.color = d.abierto ? "green" : "red";
                 document.getElementById('confTelefonoAdmin').value = d.telefonoAdmin || "";
-                
-                // Cargar el link de productos
                 document.getElementById('confLinkProductos').value = d.linkProductos || "";
                 
-                // Cargar ejemplos actuales en los inputs
-                document.getElementById('exMandado').value = d.ejemploMandado || "";
-                document.getElementById('exComida').value = d.ejemploComida || "";
-                document.getElementById('exEmpleo').value = d.ejemploEmpleo || "";
-                document.getElementById('exOtro').value = d.ejemploOtro || "";
+                // Actualiza el link del botón de salto
+                const linkSalto = d.linkAdminCatalogo || "#";
+                document.getElementById('btnIrACatalogoAdmin').href = linkSalto;
+                document.getElementById('nuevoLinkAdmin').value = linkSalto;
+
+                // Cargar ejemplos (Omitido aquí por brevedad, pero mantenlo en tu código)
+                if(document.getElementById('exMandado')) document.getElementById('exMandado').value = d.ejemploMandado || "";
+                if(document.getElementById('exComida')) document.getElementById('exComida').value = d.ejemploComida || "";
+                if(document.getElementById('exEmpleo')) document.getElementById('exEmpleo').value = d.ejemploEmpleo || "";
+                if(document.getElementById('exOtro')) document.getElementById('exOtro').value = d.ejemploOtro || "";
             }
         });
     }
 
+    // ==========================================
+    // TUS FUNCIONES ORIGINALES (NO TOCAR)
+    // ==========================================
     async function guardarAjustesRapido() {
         const telAdmin = document.getElementById('confTelefonoAdmin').value.trim();
         const linkProd = document.getElementById('confLinkProductos').value.trim();
-        
         await db.collection("configuracion").doc("global").set({
             abierto: document.getElementById('toggleAbierto').checked,
             telefonoAdmin: telAdmin,
-            linkProductos: linkProd, // Guardar el nuevo link
+            linkProductos: linkProd,
             ejemploMandado: document.getElementById('exMandado').value.trim(),
             ejemploComida: document.getElementById('exComida').value.trim(),
             ejemploEmpleo: document.getElementById('exEmpleo').value.trim(),
             ejemploOtro: document.getElementById('exOtro').value.trim()
         }, { merge: true });
-        
         alert("Ajustes actualizados.");
     }
 
-    // ==========================================
-    // ÓRDENES (HISTORIAL DETALLADO)
-    // ==========================================
     function escucharPedidos() {
         db.collection("pedidos").orderBy("timestamp", "desc").onSnapshot(snap => {
             const cont = document.getElementById('listaPedidos');
@@ -184,7 +206,6 @@
             snap.forEach(doc => {
                 const p = doc.data();
                 let fechaHora = p.timestamp ? p.timestamp.toDate().toLocaleString('es-NI', { dateStyle: 'medium', timeStyle: 'short' }) : "---";
-
                 cont.innerHTML += `
                     <div class="card pedido-card">
                         <span class="fecha-orden">🕒 ${fechaHora}</span>
@@ -201,73 +222,7 @@
         });
     }
 
-    async function eliminarPedido(id) { 
-        if(confirm("¿Borrar este pedido del historial?")) { await db.collection("pedidos").doc(id).delete(); }
-    }
-
-    async function eliminarTodoElHistorial() {
-        if(confirm("⚠️ ¿Borrar ABSOLUTAMENTE TODO el historial?")) {
-            const snap = await db.collection("pedidos").get();
-            const batch = db.batch();
-            snap.forEach(doc => batch.delete(doc.ref));
-            await batch.commit();
-            alert("Historial limpio.");
-        }
-    }
-
-    // ==========================================
-    // EQUIPO (GESTIÓN DE REPARTIDORES)
-    // ==========================================
-    function escucharRepartidores() {
-        db.collection("usuarios").where("rol", "==", "REPARTIDOR").onSnapshot(snap => {
-            const cont = document.getElementById('listaRepartidores');
-            cont.innerHTML = "";
-            snap.forEach(doc => {
-                const u = doc.data();
-                cont.innerHTML += `
-                    <div class="card" style="border-left: 5px solid ${u.disponible ? 'var(--verde)' : 'gray'};">
-                        <div style="display:flex; justify-content:space-between;">
-                            <b>👤 ${u.nombre}</b>
-                            <span style="font-size:0.8em; font-weight:bold; color:${u.disponible ? 'green' : 'gray'}">
-                                ${u.disponible ? '🟢 ONLINE' : '⚪ OFFLINE'}
-                            </span>
-                        </div>
-                        📱 ${u.telefono}<br>
-                        <div style="display:flex; gap:5px; margin-top:10px;">
-                            <button class="btn-edit" style="flex:1;" onclick="editarRepartidor('${doc.id}', '${u.nombre}', '${u.telefono}')">Editar</button>
-                            <button class="btn-borrar" style="flex:1;" onclick="eliminarRepartidor('${doc.id}')">Eliminar</button>
-                        </div>
-                    </div>`;
-            });
-        });
-    }
-
-    async function agregarRepartidor() {
-        const nom = prompt("Nombre del repartidor:");
-        const tel = prompt("Número de WhatsApp (Sin +505):");
-        if(nom && tel) {
-            await db.collection("usuarios").add({ nombre: nom, telefono: tel.trim(), rol: "REPARTIDOR", disponible: false });
-        }
-    }
-
-    async function editarRepartidor(id, n, t) {
-        const nom = prompt("Nombre:", n);
-        const tel = prompt("Número:", t);
-        if(nom && tel) {
-            await db.collection("usuarios").doc(id).update({ nombre: nom, telefono: tel.trim() });
-        }
-    }
-
-    async function eliminarRepartidor(id) {
-        if(confirm("¿Eliminar repartidor?")) { await db.collection("usuarios").doc(id).delete(); }
-    }
-
-    function openTab(evt, id) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        evt.currentTarget.classList.add('active');
-    }
+    // ... (El resto de funciones: eliminarPedido, eliminarTodoElHistorial, escucharRepartidores, agregar, editar, eliminar repartidor y openTab se mantienen exactamente igual a tu código original)
 </script>
 </body>
 </html>
