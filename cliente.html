@@ -321,8 +321,8 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
-            const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
+            const mapsLink = `https://maps.google.com/?q=${coordsCliente.lat},${coordsCliente.lng}`;
+            const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
             window.open(`https://wa.me/505${elegido.telefono}?text=${msg}`, '_blank');
             document.getElementById('vistaPedido').classList.add('hidden');
