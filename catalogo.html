@@ -7,137 +7,75 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <style>
-        :root { --naranja: #e67e22; --naranja-claro: #fdf2e9; --azul: #3498db; --oscuro: #1a252f; --texto-suave: #7f8c8d; --verde: #2ecc71; --fondo-desc: #f8f9fa; }
-        
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #fdfdfd; 
-            margin: 0; padding: 10px; padding-bottom: 120px; 
-            color: var(--oscuro); overflow-x: hidden;
+        :root { 
+            --naranja: #e67e22; 
+            --naranja-claro: #fdf2e9; 
+            --oscuro: #1a252f; 
+            --texto-suave: #7f8c8d; 
+            --verde: #2ecc71; 
+            --fondo-desc: #f8f9fa;
+            --gris-elegante: #fcfcfc;
+            --gris-borde: #e0e0e0;
         }
+        
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdfdfd; margin: 0; padding: 10px; padding-bottom: 120px; color: var(--oscuro); overflow-x: hidden; }
         
         header { text-align: center; padding: 20px 10px 10px 10px; }
         header h2 { font-size: 2em; font-weight: 900; letter-spacing: -1px; margin-bottom: 2px; }
         
-        /* --- ESTILO RESALTADO PARA EL MENSAJE DE ENVÍO --- */
-        #mensajeBienvenida {
-            font-size: 1em; 
-            color: #d35400; /* Naranja oscuro que resalta pero no satura */
-            background: var(--naranja-claro); /* Fondo suave */
-            font-weight: 700;
-            margin: 10px auto 5px auto; 
-            display: inline-block; 
-            padding: 8px 15px; 
-            line-height: 1.3;
-            border-radius: 10px;
-            border: 1px solid rgba(230, 126, 34, 0.3); /* Borde sutil */
-        }
+        #mensajeBienvenida { font-size: 1em; color: #d35400; background: var(--naranja-claro); font-weight: 700; margin: 10px auto 5px auto; display: inline-block; padding: 8px 15px; line-height: 1.3; border-radius: 10px; border: 1px solid rgba(230, 126, 34, 0.3); }
 
-        #textoSugerencia {
-            font-size: 0.9em; color: var(--texto-suave); font-weight: 500;
-            margin-bottom: 15px; display: block; padding: 0 20px; font-style: italic;
-        }
+        .tabs-wrapper { position: sticky; top: 0; background: rgba(253, 253, 253, 0.95); backdrop-filter: blur(10px); z-index: 100; margin: 0 -10px; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .tabs-container { display: flex; gap: 10px; overflow-x: auto; padding: 0 20px; scrollbar-width: none; }
+        .tabs-container::-webkit-scrollbar { display: none; }
         
-        .tabs-wrapper {
-            position: sticky; top: 0; background: rgba(253, 253, 253, 0.95);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            z-index: 100; margin: 0 -10px; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,0.05);
-        }
+        .tab-btn { padding: 10px 20px; border-radius: 25px; border: 1.5px solid #eee; background: #fff; color: #555; font-weight: 700; cursor: pointer; transition: 0.3s; font-size: 0.9em; flex-shrink: 0; }
+        .tab-btn.active { background: var(--naranja); color: white; border-color: var(--naranja); box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3); }
 
-        .tabs-container { 
-            display: flex; gap: 10px; overflow-x: auto; padding: 0 20px;
-            white-space: nowrap; scrollbar-width: none; scroll-behavior: smooth;
-        }
-        
-        .tabs-container::-webkit-scrollbar { display: none; } 
-        
-        .tab-btn { 
-            padding: 10px 20px; border-radius: 25px; border: 1.5px solid #eee; 
-            background: #fff; color: #555; font-weight: 700; cursor: pointer; 
-            transition: 0.3s; font-size: 0.9em; flex-shrink: 0;
-        }
-
-        .tab-btn.active { 
-            background: var(--naranja); color: white; border-color: var(--naranja);
-            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
-        }
-
-        .contenedor-locales { max-width: 600px; margin: auto; display: grid; gap: 20px; margin-top: 20px; }
-        
         .local-card { 
-            background: white; border-radius: 20px; overflow: hidden; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;
-            border-left: 6px solid var(--naranja); transition: 0.3s; 
+            background: linear-gradient(145deg, #ffffff, var(--gris-elegante)); 
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03); 
+            border: 1px solid var(--gris-borde); 
+            border-left: 6px solid var(--naranja); 
+            overflow: hidden; 
+            transition: transform 0.2s ease;
         }
 
-        .local-header { padding: 20px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-        .local-info { display: flex; align-items: center; gap: 15px; }
-        .local-nombre { font-weight: 800; color: var(--oscuro); font-size: 1.3em; }
-        .arrow { transition: 0.3s; color: var(--naranja); font-weight: bold; }
+        .local-header { 
+            padding: 22px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            cursor: pointer; 
+            background: rgba(255, 255, 255, 0.4);
+        }
         
-        .local-card.open .arrow { transform: rotate(180deg); }
-        .productos-lista { display: none; padding: 5px 15px 20px 15px; background: #fff; }
-        .local-card.open .productos-lista { display: block; animation: fadeIn 0.3s ease; }
+        .local-nombre { font-weight: 800; color: var(--oscuro); font-size: 1.25em; letter-spacing: -0.5px; }
         
-        .producto-item { 
-            display: flex; flex-direction: column; padding: 16px; 
-            margin-bottom: 12px; background: #fff; border-radius: 18px;
-            border: 1px solid #eee; box-shadow: 0 3px 6px rgba(0,0,0,0.03);
-        }
+        .local-card.open { border-color: var(--naranja); box-shadow: 0 10px 25px rgba(0,0,0,0.06); }
+        .local-card.open .local-header { border-bottom: 1px solid #f0f0f0; background: #fff; }
 
-        .prod-superior { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .productos-lista { display: none; padding: 15px; background: #fff; }
+        .local-card.open .productos-lista { display: block; }
+
+        .producto-item { display: flex; flex-direction: column; padding: 16px; margin-bottom: 12px; background: #fff; border-radius: 18px; border: 1px solid #eee; box-shadow: 0 3px 6px rgba(0,0,0,0.03); }
+        .prod-superior { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
+        .prod-info-base b { color: #000; font-size: 1.25em; display: block; font-weight: 800; }
+        .prod-precio { background: var(--naranja); color: #fff; font-weight: 900; font-size: 1.1em; padding: 8px 14px; border-radius: 12px; box-shadow: 0 4px 10px rgba(230, 126, 34, 0.25); white-space: nowrap; }
+
+        .prod-cuerpo { display: flex; gap: 12px; align-items: flex-start; }
+        .prod-desc { flex: 1; font-size: 0.95em; color: #555; background: var(--fondo-desc); padding: 10px 12px; border-radius: 12px; border-left: 3px solid #ddd; white-space: pre-wrap; margin-bottom: 5px; }
         
-        .prod-info-base b { color: #000; font-size: 1.2em; display: block; font-weight: 800; }
-        
-        /* --- ESTILO PARA RESPETAR SALTOS DE LÍNEA EN DESCRIPCIÓN --- */
-        .prod-desc { 
-            font-size: 0.9em; color: #555; background: var(--fondo-desc);
-            padding: 10px 12px; border-radius: 12px; border-left: 3px solid #ddd; margin-bottom: 10px;
-            white-space: pre-wrap; /* Esta línea respeta los Enter que das en el admin */
-        }
+        .prod-foto-mini { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 1px solid #eee; flex-shrink: 0; }
 
-        .prod-precio { 
-            background: var(--naranja); color: #fff; font-weight: 900; 
-            font-size: 1.1em; padding: 8px 14px; border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(230, 126, 34, 0.25);
-        }
+        .variantes-titulo { font-size: 0.65em; text-transform: uppercase; color: #d35400; font-weight: 800; margin: 10px 0 6px 5px; letter-spacing: 1px; }
+        .contenedor-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip { background: #fffafa; border: 1.5px solid #edbb99; border-radius: 10px; padding: 6px 12px; font-size: 0.85em; color: #5d4037; font-weight: 700; box-shadow: 0 2px 4px rgba(237, 187, 153, 0.1); }
 
-        /* --- DISEÑO DE CHIPS (CUADRADITOS REDONDEADOS PEQUEÑOS) --- */
-        .variantes-titulo { 
-            font-size: 0.65em; text-transform: uppercase; color: #d35400; 
-            font-weight: 800; margin: 10px 0 6px 5px;
-            letter-spacing: 1px; opacity: 0.8;
-        }
-
-        .contenedor-chips-marcas {
-            display: flex;
-            flex-wrap: wrap; /* Permite que se pongan una al lado de la otra */
-            gap: 8px; /* Espacio entre cuadraditos */
-            margin-top: 5px;
-        }
-
-        .chip-marca {
-            background: #fffafa; /* Fondo rosado sutil */
-            border: 1.5px solid #edbb99; /* Borde naranja/salmón suave */
-            border-radius: 10px; /* Cuadradito redondeado */
-            padding: 6px 12px;
-            font-size: 0.82em;
-            color: #5d4037;
-            font-weight: 700;
-            display: inline-block; /* Solo ocupa el espacio del texto */
-            box-shadow: 0 2px 4px rgba(237, 187, 153, 0.1);
-            animation: fadeIn 0.4s ease;
-        }
-
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-        .btn-hacer-pedido {
-            position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-            width: 85%; max-width: 400px; background: var(--verde); color: white;
-            text-align: center; padding: 18px; border-radius: 18px; font-weight: 900;
-            text-decoration: none; font-size: 1.2em; z-index: 90;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
+        .msg-cargando { text-align: center; padding: 20px; color: var(--texto-suave); font-style: italic; }
+        .btn-hacer-pedido { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 400px; background: var(--verde); color: white; text-align: center; padding: 18px; border-radius: 18px; font-weight: 900; text-decoration: none; font-size: 1.2em; z-index: 90; box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3); }
     </style>
 </head>
 <body>
@@ -145,23 +83,19 @@
 <header>
     <h2 style="color: var(--naranja);">Antojitos Pueblo Nuevo 🏪</h2>
     <span id="mensajeBienvenida">Cargando...</span>
-    <span id="textoSugerencia"></span>
+    <span id="textoSugerencia" style="font-size: 0.9em; color: var(--texto-suave); display: block; font-style: italic; margin-top: 5px;"></span>
 </header>
 
 <div class="tabs-wrapper">
-    <div id="tabsCategorias" class="tabs-container">
-        <button class="tab-btn active" onclick="seleccionarTab('todo', this)">✨ Todo</button>
-    </div>
+    <div id="tabsCategorias" class="tabs-container"></div>
 </div>
 
-<div id="listaLocales" class="contenedor-locales"></div>
+<div id="listaLocales" style="max-width: 600px; margin: auto; margin-top: 20px;"></div>
 
-<a href="#" id="btnIrAPedidos" class="btn-hacer-pedido">
-    <span>🛒</span> HACER PEDIDO
-</a>
+<a href="#" id="btnIrAPedidos" class="btn-hacer-pedido">🛒 HACER PEDIDO</a>
 
 <script>
-    const firebaseConfig = { 
+    const config = { 
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
         authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
         projectId: "antojitos-pueblo-nuevo", 
@@ -169,108 +103,101 @@
         messagingSenderId: "1006413360329", 
         appId: "1:1006413360329:web:99103e89833729cc2e3118" 
     };
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(config);
     const db = firebase.firestore();
+    let catAct = "todo";
 
-    let categoriaActual = "todo";
+    window.onload = () => { cargarConfig(); cargarCats(); cargarLocales(); };
 
-    window.onload = () => {
-        cargarCategorias(); cargarLocales(); cargarConfigGlobal();
-    };
-
-    function cargarConfigGlobal() {
+    function cargarConfig() {
         db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
             if(doc.exists) {
-                const data = doc.data();
-                document.getElementById('btnIrAPedidos').href = data.linkPedido || "#";
-                document.getElementById('mensajeBienvenida').innerText = data.mensajeCabecera || "¡Bienvenidos!";
-                document.getElementById('textoSugerencia').innerText = data.textoSugerencia || "";
+                const d = doc.data();
+                document.getElementById('btnIrAPedidos').href = d.linkPedido || "#";
+                document.getElementById('mensajeBienvenida').innerText = d.mensajeCabecera || "¡Bienvenidos!";
+                document.getElementById('textoSugerencia').innerText = d.textoSugerencia || "";
             }
         });
     }
 
-    function cargarCategorias() {
+    function cargarCats() {
         db.collection("categorias").orderBy("nombre").onSnapshot(snap => {
-            const container = document.getElementById('tabsCategorias');
-            container.innerHTML = `<button class="tab-btn ${categoriaActual === 'todo' ? 'active' : ''}" onclick="seleccionarTab('todo', this)">✨ Todo</button>`;
-            snap.forEach(doc => {
-                const cat = doc.data();
-                container.innerHTML += `<button class="tab-btn ${categoriaActual === doc.id ? 'active' : ''}" onclick="seleccionarTab('${doc.id}', this)">${cat.nombre}</button>`;
+            const c = document.getElementById('tabsCategorias');
+            c.innerHTML = `<button class="tab-btn ${catAct=='todo'?'active':''}" onclick="selTab('todo',this)">✨ Todo</button>`;
+            snap.forEach(d => {
+                c.innerHTML += `<button class="tab-btn ${catAct==d.id?'active':''}" onclick="selTab('${d.id}',this)">${d.data().nombre}</button>`;
             });
         });
     }
 
-    function seleccionarTab(id, btn) {
-        categoriaActual = id;
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    function selTab(id, b) {
+        catAct = id;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        b.classList.add('active');
         cargarLocales();
     }
 
     function cargarLocales() {
-        let query = db.collection("locales");
-        if (categoriaActual !== "todo") query = query.where("categoriaId", "==", categoriaActual);
-        query.onSnapshot(snap => {
+        let q = db.collection("locales");
+        if(catAct !== "todo") q = q.where("categoriaId", "==", catAct);
+        q.onSnapshot(snap => {
             const container = document.getElementById('listaLocales');
             container.innerHTML = "";
             snap.forEach(doc => {
-                const local = doc.data();
-                const id = doc.id;
+                const l = doc.data();
                 container.innerHTML += `
-                    <div class="local-card" id="card-${id}">
-                        <div class="local-header" onclick="toggleAcordeon('${id}')">
-                            <div class="local-info">
-                                <span class="local-icon">${local.emoji || '🏘️'}</span>
-                                <span class="local-nombre">${local.nombre}</span>
-                            </div>
-                            <span class="arrow">▼</span>
-                        </div>
-                        <div id="lista-prod-${id}" class="productos-lista"></div>
-                    </div>`;
+                <div class="local-card" id="card-${doc.id}">
+                    <div class="local-header" onclick="toggleAcc('${doc.id}')">
+                        <span class="local-nombre">${l.emoji || '🏘️'} ${l.nombre}</span>
+                        <span style="color:var(--naranja); font-weight:bold; font-size: 0.8em;">DESCUBRIR ▼</span>
+                    </div>
+                    <div id="prod-${doc.id}" class="productos-lista"></div>
+                </div>`;
             });
         });
     }
 
-    function toggleAcordeon(id) {
-        const card = document.getElementById(`card-${id}`);
-        const abierto = card.classList.contains('open');
-        document.querySelectorAll('.local-card').forEach(c => c.classList.remove('open'));
-        if (!abierto) {
-            card.classList.add('open');
-            cargarProductosDelLocal(id);
+    function toggleAcc(id) {
+        const c = document.getElementById(`card-${id}`);
+        const box = document.getElementById(`prod-${id}`);
+        const abierto = c.classList.contains('open');
+        document.querySelectorAll('.local-card').forEach(card => card.classList.remove('open'));
+        if(!abierto) { 
+            c.classList.add('open'); 
+            box.innerHTML = `<div class="msg-cargando">⏳ Cargando menú, espere un segundo...</div>`;
+            cargarProds(id); 
         }
     }
 
-    function cargarProductosDelLocal(localId) {
-        const box = document.getElementById(`lista-prod-${localId}`);
-        db.collection("productos").where("localId", "==", localId).onSnapshot(snap => {
+    function cargarProds(lId) {
+        const box = document.getElementById(`prod-${lId}`);
+        db.collection("productos").where("localId", "==", lId).onSnapshot(snap => {
             box.innerHTML = "";
+            if (snap.empty) { box.innerHTML = `<div class="msg-cargando">No hay productos disponibles.</div>`; return; }
             snap.forEach(doc => {
                 const p = doc.data();
-                
-                let variantesHtml = "";
-                if (p.variantes) {
-                    const lista = p.variantes.split("-"); 
-                    variantesHtml = '<div class="variantes-titulo">Marcas Disponibles:</div><div class="contenedor-chips-marcas">';
-                    lista.forEach(v => {
-                        if(v.trim() !== "") {
-                            variantesHtml += `<div class="chip-marca">${v.trim()}</div>`;
-                        }
-                    });
-                    variantesHtml += '</div>';
+                let chips = "";
+                if(p.variantes){
+                    chips = '<div class="variantes-titulo">Marcas/Opciones:</div><div class="contenedor-chips">';
+                    p.variantes.split("-").forEach(v => { if(v.trim()) chips += `<div class="chip">${v.trim()}</div>`; });
+                    chips += '</div>';
                 }
 
                 box.innerHTML += `
-                    <div class="producto-item">
-                        <div class="prod-superior">
-                            <div class="prod-info-base">
-                                <b>${p.nombre}</b>
-                            </div>
-                            <div class="prod-precio">${p.precio}</div>
+                <div class="producto-item">
+                    <div class="prod-superior">
+                        <div class="prod-info-base"><b>${p.nombre}</b></div>
+                        <div class="prod-precio">${p.precio}</div>
+                    </div>
+                    
+                    <div class="prod-cuerpo">
+                        <div style="flex:1">
+                            ${p.descripcion ? `<div class="prod-desc">${p.descripcion}</div>` : ''}
+                            ${chips}
                         </div>
-                        ${p.descripcion ? `<div class="prod-desc">${p.descripcion}</div>` : ''}
-                        ${variantesHtml}
-                    </div>`;
+                        ${p.urlImagen ? `<img src="${p.urlImagen}" class="prod-foto-mini" alt="${p.nombre}">` : ''}
+                    </div>
+                </div>`;
             });
         });
     }
