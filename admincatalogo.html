@@ -12,7 +12,8 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--fondo); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 700px; margin: auto; }
         
-        h1 { text-align: center; color: var(--oscuro); font-weight: 900; margin-bottom: 30px; }
+        /* Título con cursor para indicar interacción secreta */
+        h1 { text-align: center; color: var(--oscuro); font-weight: 900; margin-bottom: 30px; cursor: pointer; user-select: none; }
 
         /* ESTILO DE SECCIONES COLAPSABLES */
         .seccion-admin { 
@@ -28,13 +29,13 @@
         }
         .seccion-header:hover { background: #fcfcfc; }
         .seccion-header h2 { margin: 0; font-size: 1.1em; color: var(--oscuro); display: flex; align-items: center; gap: 10px; }
-        .seccion-header .icono-flecha { font-size: 0.8em; transition: 0.3s; color: var(--texto-suave); }
+        .seccion-header .icono-flecha { font-size: 0.8em; transition: 0.3s; color: #95a5a6; }
 
         .seccion-body { display: none; padding: 22px; border-top: 1px solid #f0f0f0; }
         .seccion-admin.abierta .seccion-body { display: block; }
         .seccion-admin.abierta .icono-flecha { transform: rotate(180deg); }
 
-        /* FORMULARIOS LIMPIOS */
+        /* FORMULARIOS */
         .grid-form { display: grid; gap: 12px; }
         label { font-size: 11px; font-weight: 800; color: #95a5a6; text-transform: uppercase; margin-bottom: -5px; }
         
@@ -61,13 +62,36 @@
         .btn-edit { background: #fef9e7; color: #f1c40f; }
         .btn-del { background: #fdedec; color: var(--rojo); }
 
+        /* --- BOTÓN DE SALTO (VISIBLE) --- */
+        .btn-salto-admin {
+            position: fixed; bottom: 20px; right: 20px;
+            background: var(--oscuro); color: white; padding: 12px 20px;
+            border-radius: 50px; text-decoration: none; font-weight: bold;
+            display: flex; align-items: center; gap: 8px; font-size: 13px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 999;
+            transition: 0.3s; border: 2px solid rgba(255,255,255,0.1);
+        }
+        .btn-salto-admin:active { transform: scale(0.9); }
+
+        /* --- MODAL CONFIGURACIÓN OCULTA --- */
+        #modalConfigSecreta {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: white;
+            padding: 30px; border-radius: 20px; z-index: 10001;
+            width: 90%; max-width: 350px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .overlay-secreto {
+            display: none; position: fixed; top: 0; left: 0; width: 100%;
+            height: 100%; background: rgba(0,0,0,0.6); z-index: 10000;
+            backdrop-filter: blur(4px);
+        }
         .hint { font-size: 11px; color: #999; font-weight: 400; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>⚙️ Mi Tienda Admin</h1>
+    <h1 onclick="detectarClicksSecretos()">⚙️ Mi Tienda Admin</h1>
 
     <div class="seccion-admin" id="sec-config">
         <div class="seccion-header" onclick="toggleSeccion('sec-config')">
@@ -132,15 +156,27 @@
                 <select id="selLocalProd"></select>
                 <input type="text" id="nombreProd" placeholder="¿Qué vendes?">
                 <input type="text" id="precioProd" placeholder="Precio (ej: C$ 100)">
-                <label>Ingredientes / Extras <span class="hint">(Se lee debajo del nombre)</span></label>
+                <label>Ingredientes / Extras</label>
                 <textarea id="descProd" placeholder="Ej: Con salsa blanca y extra queso"></textarea>
-                <label>Marcas y Precios <span class="hint">(Formato: Marca:Precio, ...)</span></label>
+                <label>Marcas y Precios</label>
                 <input type="text" id="variantesProd" placeholder="Coca:50, Pepsi:40">
                 <button class="btn-principal" id="btnProd" onclick="procesarProducto()">🍔 Guardar Producto</button>
             </div>
             <div class="scroll-lista" id="listaProductosAdmin"></div>
         </div>
     </div>
+</div>
+
+<a href="#" id="btnIrAPedidosAdmin" class="btn-salto-admin">
+    <span>📝</span> Ir a Pedidos
+</a>
+
+<div id="overlaySecreto" class="overlay-secreto" onclick="cerrarConfig()"></div>
+<div id="modalConfigSecreta">
+    <h3 style="margin-top:0">⚙️ Enlace del Otro Panel</h3>
+    <p style="font-size: 0.8em; color: #666;">Pega el link del Administrador de Pedidos:</p>
+    <input type="text" id="nuevoLinkAdmin" placeholder="https://...">
+    <button class="btn-principal" style="background: var(--verde); margin-top: 15px;" onclick="guardarLinkAdmin()">💾 Actualizar Enlace</button>
 </div>
 
 <script>
@@ -159,16 +195,56 @@
         cargarConfig(); listarCategorias(); listarLocales(); listarProductos();
     };
 
-    // FUNCIÓN PARA ABRIR/CERRAR SECCIONES
+    // --- LÓGICA DE SALTO Y CONFIGURACIÓN OCULTA ---
+    let clicks = 0;
+    function detectarClicksSecretos() {
+        clicks++;
+        if (clicks === 5) {
+            document.getElementById('modalConfigSecreta').style.display = 'block';
+            document.getElementById('overlaySecreto').style.display = 'block';
+            clicks = 0;
+        }
+        setTimeout(() => { clicks = 0; }, 2000);
+    }
+
+    function cerrarConfig() {
+        document.getElementById('modalConfigSecreta').style.display = 'none';
+        document.getElementById('overlaySecreto').style.display = 'none';
+    }
+
+    async function guardarLinkAdmin() {
+        const link = document.getElementById('nuevoLinkAdmin').value;
+        if(!link) return alert("Ingresa un link válido");
+        await db.collection("configuracion").doc("catalogo").set({ linkAdminPedidos: link }, { merge: true });
+        alert("¡Link de navegación actualizado!");
+        cerrarConfig();
+    }
+
+    // --- CARGAR CONFIGURACIÓN (Incluye el link de salto) ---
+    function cargarConfig() {
+        db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
+            if(doc.exists) {
+                const d = doc.data();
+                document.getElementById('mensajeCabecera').value = d.mensajeCabecera || "";
+                document.getElementById('textoSugerencia').value = d.textoSugerencia || "";
+                document.getElementById('linkPedido').value = d.linkPedido || "";
+                
+                // Actualiza el link del botón de salto
+                const linkSalto = d.linkAdminPedidos || "#";
+                document.getElementById('btnIrAPedidosAdmin').href = linkSalto;
+                document.getElementById('nuevoLinkAdmin').value = linkSalto;
+            }
+        });
+    }
+
+    // --- EL RESTO DE TU LÓGICA (Categorías, Locales, Productos) ---
     function toggleSeccion(id) {
         const elemento = document.getElementById(id);
         const estaAbierta = elemento.classList.contains('abierta');
-        // Cerrar todas las demás para limpiar la vista
         document.querySelectorAll('.seccion-admin').forEach(s => s.classList.remove('abierta'));
         if (!estaAbierta) elemento.classList.add('abierta');
     }
 
-    // --- LÓGICA FIREBASE (Mantenemos tu lógica funcional) ---
     async function guardarConfig() {
         const data = {
             mensajeCabecera: document.getElementById('mensajeCabecera').value,
@@ -177,17 +253,6 @@
         };
         await db.collection("configuracion").doc("catalogo").set(data, { merge: true });
         alert("¡Ajustes guardados!");
-    }
-
-    function cargarConfig() {
-        db.collection("configuracion").doc("catalogo").onSnapshot(doc => {
-            if(doc.exists) {
-                const d = doc.data();
-                document.getElementById('mensajeCabecera').value = d.mensajeCabecera || "";
-                document.getElementById('textoSugerencia').value = d.textoSugerencia || "";
-                document.getElementById('linkPedido').value = d.linkPedido || "";
-            }
-        });
     }
 
     async function procesarCategoria() {
@@ -275,7 +340,6 @@
     }
 
     function eliminar(col, id) { if(confirm("¿Eliminar permanentemente?")) db.collection(col).doc(id).delete(); }
-
     function editarCat(id, n) { document.getElementById('idCat').value = id; document.getElementById('nombreCat').value = n; document.getElementById('btnCat').innerText = "💾 Actualizar"; }
     function editarLocal(id, n, e, c) { 
         document.getElementById('idLocal').value = id; document.getElementById('nombreLocal').value = n; 
@@ -288,11 +352,9 @@
         document.getElementById('selLocalProd').value = l; document.getElementById('variantesProd').value = v;
         document.getElementById('btnProd').innerText = "💾 Actualizar";
     }
-
     function limpiarCat() { document.getElementById('idCat').value = ""; document.getElementById('nombreCat').value = ""; document.getElementById('btnCat').innerText = "➕ Guardar"; }
     function limpiarLocal() { document.getElementById('idLocal').value = ""; document.getElementById('nombreLocal').value = ""; document.getElementById('emojiLocal').value = ""; document.getElementById('btnLocal').innerText = "🏘️ Guardar"; }
     function limpiarProd() { document.getElementById('idProd').value = ""; document.getElementById('nombreProd').value = ""; document.getElementById('precioProd').value = ""; document.getElementById('descProd').value = ""; document.getElementById('variantesProd').value = ""; document.getElementById('btnProd').innerText = "🍔 Guardar"; }
 </script>
-
 </body>
 </html>
