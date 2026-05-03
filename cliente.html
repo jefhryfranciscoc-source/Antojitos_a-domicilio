@@ -52,11 +52,14 @@
         <div id="indicadorGPS" class="status-gps gps-buscando">
             <span id="puntoGps" class="dot dot-rojo"></span>
             <div style="display: flex; flex-direction: column; text-align: left;">
-                <span id="textoGps" style="font-size: 1.05em;">Buscando señal... Espera 15 seg.</span>
-                <span id="avisoGpsActivo" style="font-size: 0.9em; font-weight: bold; color: #b33939; margin-top: 2px;">⚠️ Asegúrate de tener tu GPS activo</span>
+                <span id="textoGps" style="font-size: 1.1em; font-weight: 800;">Buscando señal GPS...</span>
+                <span style="font-size: 0.85em; font-weight: bold; margin-bottom: 4px;">(Espera unos 15 segundos)</span>
+                <span id="avisoGpsActivo" style="font-size: 0.95em; color: #b33939; background: white; padding: 2px 6px; border-radius: 6px; border: 1px solid #e74c3c;">
+                    ⚠️ Asegúrate de tener tu GPS activo
+                </span>
             </div>
         </div>
-        
+
         <p style="text-align:center; font-size:0.9em; color:#666; font-weight:bold;">¿Qué servicio necesitas hoy?</p>
         <div class="grid-servicios">
             <button type="button" id="btn-MANDADO" onclick="seleccionarServicio('MANDADO')" class="btn-servicio activo" style="color:#1565c0;">📦 Mandado / Tienda</button>
@@ -75,6 +78,7 @@
             <a id="btnVerProductos" href="#" target="_blank" class="btn-productos hidden">🛒 Ver Precios y Productos</a>
         </div>
     </div>
+
     <div id="vistaLoginRepartidor" class="hidden" style="text-align: center; padding: 20px;">
         <p style="color: var(--azul); font-weight: bold; font-size: 1.1em;">Área de Repartidores</p>
         <div style="background: #fff; padding: 15px; border-radius: 15px; border: 1px solid #ddd;">
@@ -111,7 +115,8 @@
         <button class="btn-pedir" onclick="location.reload()">NUEVA SOLICITUD</button>
     </div>
 </div>
-
+</body>
+</html>
 <script>
     const firebaseConfig = { 
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
@@ -145,223 +150,9 @@
         const savedTel = localStorage.getItem('ant_tel') || "";
         document.getElementById('nombreCli').value = savedNom;
         document.getElementById('telCli').value = savedTel;
-
-        document.getElementById('dirCli').placeholder = "Ayúdanos a encontrarte: Punto de referencia de tu casa Ej:( color amarillo, portón negro)";
-
-        const savedRepartidor = localStorage.getItem('ant_tel_repartidor');
-        if(savedRepartidor) autoVerificar(savedRepartidor);
-    };
-
-    function cargarConfig() { 
-        db.collection("configuracion").doc("global").onSnapshot(doc => { 
-            if(doc.exists) {
-                const datos = doc.data();
-                tiendaAbierta = datos.abierto;
-                document.getElementById('statusHorario').innerText = tiendaAbierta ? "🟢 SERVICIO DISPONIBLE" : "🔴 CERRADO";
-                document.getElementById('statusHorario').className = "horario-tag " + (tiendaAbierta ? "abierto" : "cerrado");
-                
-                if(datos.telefonoAdmin) {
-                    numeroAdminEmpleo = datos.telefonoAdmin;
-                    const linkGral = document.getElementById('linkGralRecluta');
-                    const linkErr = document.getElementById('linkAdminRecluta');
-                    if(linkGral) linkGral.href = `https://wa.me/505${numeroAdminEmpleo}`;
-                    if(linkErr) {
-                        linkErr.innerText = "+505 " + numeroAdminEmpleo;
-                        linkErr.href = `https://wa.me/505${numeroAdminEmpleo}`;
-                    }
-                }
-
-                const btnProd = document.getElementById('btnVerProductos');
-                if(datos.linkProductos && datos.linkProductos.trim() !== "") {
-                    btnProd.href = datos.linkProductos;
-                    btnProd.classList.remove('hidden');
-                } else {
-                    btnProd.classList.add('hidden');
-                }
-
-                if(datos.ejemploMandado) ejemplosAdmin.MANDADO = datos.ejemploMandado;
-                if(datos.ejemploComida) ejemplosAdmin.COMIDA = datos.ejemploComida;
-                if(datos.ejemploEmpleo) ejemplosAdmin.EMPLEO = datos.ejemploEmpleo;
-                if(datos.ejemploOtro) ejemplosAdmin.OTRO = datos.ejemploOtro;
-                actualizarPlaceholder();
-            }
-        }); 
-    }
-
-    function seleccionarServicio(tipo) {
-        servicioSeleccionado = tipo;
-        document.querySelectorAll('.btn-servicio').forEach(btn => btn.classList.remove('activo'));
-        document.getElementById('btn-' + tipo).classList.add('activo');
-        actualizarPlaceholder();
-    }
-
-    function actualizarPlaceholder() {
-        const area = document.getElementById('detallePedido');
-        area.placeholder = ejemplosAdmin[servicioSeleccionado] || "Escribe aquí los detalles...";
-    }
-
-    function switchView(modo) {
-        document.getElementById('vistaPedido').classList.add('hidden');
-        document.getElementById('vistaLoginRepartidor').classList.add('hidden');
-        document.getElementById('vistaRepartidor').classList.add('hidden');
-        document.getElementById('navCliente').classList.toggle('active', modo === 'cliente');
-        document.getElementById('navRepartidor').classList.toggle('active', modo !== 'cliente');
-        if(modo === 'cliente') document.getElementById('vistaPedido').classList.remove('hidden');
-        else if(modo === 'repartidor_login') {
-            if(esRepartidor) switchView('repartidor_dashboard');
-            else {
-                document.getElementById('msgError').classList.add('hidden');
-                document.getElementById('vistaLoginRepartidor').classList.remove('hidden');
-            }
-        } else if(modo === 'repartidor_dashboard') {
-            document.getElementById('vistaRepartidor').classList.remove('hidden');
-            escucharColegas();
-        }
-    }
-
-    async function intentarLogin() {
-        const numero = document.getElementById('inputLogin').value.trim();
-        if(numero.length < 8) return alert("Por favor, ingresa tu número completo.");
-        try {
-            const snap = await db.collection("usuarios").where("telefono", "==", numero).where("rol", "==", "REPARTIDOR").get();
-            if(!snap.empty) {
-                esRepartidor = true;
-                idRepartidor = snap.docs[0].id;
-                localStorage.setItem('ant_tel_repartidor', numero);
-                actualizarBotonEstado(snap.docs[0].data().disponible);
-                switchView('repartidor_dashboard');
-            } else {
-                esRepartidor = false;
-                document.getElementById('msgError').classList.remove('hidden');
-            }
-        } catch (e) { console.error(e); alert("Error de red."); }
-    }
-
-    async function autoVerificar(numero) {
-        try {
-            const snap = await db.collection("usuarios").where("telefono", "==", numero).where("rol", "==", "REPARTIDOR").get();
-            if(!snap.empty) {
-                esRepartidor = true;
-                idRepartidor = snap.docs[0].id;
-                actualizarBotonEstado(snap.docs[0].data().disponible);
-            }
-        } catch(e) {}
-    }
-
-    function actualizarBotonEstado(disponible) {
-        const btn = document.getElementById('btnStatusRepartidor');
-        btn.innerText = disponible ? "🟢 ESTÁS ACTIVO (Recibiendo pedidos)" : "🔴 ESTÁS INACTIVO";
-        btn.style.background = disponible ? "#2ecc71" : "#e74c3c";
-        btn.style.color = "white";
-    }
-
-    async function toggleDisponibilidad() {
-        if(!idRepartidor) return;
-        const docRef = db.collection("usuarios").doc(idRepartidor);
-        const doc = await docRef.get();
-        const nuevoEstado = !doc.data().disponible;
-        await docRef.update({ disponible: nuevoEstado });
-        actualizarBotonEstado(nuevoEstado);
-    }
-
-    function escucharColegas() {
-        db.collection("usuarios").where("rol", "==", "REPARTIDOR").onSnapshot(snap => {
-            let html = "";
-            snap.forEach(doc => {
-                const d = doc.data();
-                const colorBorde = d.disponible ? "#2ecc71" : "gray";
-                const textoEstado = d.disponible ? "🟢 ONLINE" : "⚪ OFFLINE";
-                const colorTexto = d.disponible ? "green" : "gray";
-
-                html += `
-                    <div style="background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid ${colorBorde}; display: flex; justify-content: space-between; align-items: center;">
-                        <div style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 65%;">
-                            <b style="color: #2c3e50; font-size: 1.05em;">👤 ${d.nombre || 'Compañero'}</b><br>
-                            <span style="font-size: 0.85em; color: #555;">📱 ${d.telefono}</span>
-                        </div>
-                        <span style="font-size:0.8em; font-weight:bold; color:${colorTexto}; white-space: nowrap;">
-                            ${textoEstado}
-                        </span>
-                    </div>`;
-            });
-            document.getElementById('listaRepartidoresOnline').innerHTML = html;
-        });
-    }
-
-    function obtenerGPS() {
-        if (!navigator.geolocation) return;
-        navigator.geolocation.watchPosition((pos) => {
-            coordsCliente = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            document.getElementById('indicadorGPS').className = "status-gps gps-listo";
-            document.getElementById('textoGps').innerText = "📍 UBICACIÓN LISTA";
-            document.getElementById('textoGps').style.fontSize = "1.1em";
-            document.getElementById('puntoGps').className = "dot dot-verde";
-            document.getElementById('avisoGpsActivo').classList.add('hidden');
-            if(tiendaAbierta) {
-                document.getElementById('btnPedirFinal').disabled = false;
-                document.getElementById('btnPedirFinal').innerText = "🚀 ENVIAR SOLICITUD";
-            }
-        }, (error) => {
-            setTimeout(obtenerGPS, 3000);
-        }, { enableHighAccuracy: true });
-    }
-
-    async function lanzarPedido() {
-        const nom = document.getElementById('nombreCli').value;
-        const tel = document.getElementById('telCli').value;
-        const dir = document.getElementById('dirCli').value;
-        const desc = document.getElementById('detallePedido').value;
-
-        if(!nom || !tel || !dir || !desc) return alert("Completa los campos.");
-        if(!coordsCliente) return alert("Esperando señal GPS...");
         
-        localStorage.setItem('ant_nom', nom);
-        localStorage.setItem('ant_tel', tel);
-
-        try {
-            const snapRepartidores = await db.collection("usuarios").where("rol", "==", "REPARTIDOR").where("disponible", "==", true).get();
-            if (snapRepartidores.empty) return alert("No hay repartidores activos.");
-            
-            const lista = snapRepartidores.docs;
-            const elegido = lista[Math.floor(Math.random() * lista.length)].data();
-
-            await db.collection("pedidos").add({
-             <script>
-    const firebaseConfig = { 
-        apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
-        authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
-        projectId: "antojitos-pueblo-nuevo", 
-        storageBucket: "antojitos-pueblo-nuevo.appspot.com", 
-        messagingSenderId: "1006413360329", 
-        appId: "1:1006413360329:web:99103e89833729cc2e3118" 
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    
-    let servicioSeleccionado = "MANDADO";
-    let coordsCliente = null;
-    let tiendaAbierta = false;
-    let esRepartidor = false;
-    let idRepartidor = null;
-    let numeroAdminEmpleo = "";
-    
-    let ejemplosAdmin = {
-        MANDADO: "Ej: Necesito un galón de pintura blanca...",
-        COMIDA: "Ej: Quiero 2 servicios de tajadas con queso...",
-        EMPLEO: "Ej: Necesito ayuda limpiando el patio...",
-        OTRO: "Ej: Necesito ayuda instalando algo..."
-    };
-
-    window.onload = () => {
-        obtenerGPS();
-        cargarConfig();
-        const savedNom = localStorage.getItem('ant_nom') || "";
-        const savedTel = localStorage.getItem('ant_tel') || "";
-        document.getElementById('nombreCli').value = savedNom;
-        document.getElementById('telCli').value = savedTel;
-
-        // EDITADO: Texto de ayuda para la dirección y punto de referencia
-        document.getElementById('dirCli').placeholder = "Ayúdanos a encontrarte: Danos un punto de referencia de tu casa Ej:( color amarillo, puerta (portón) color negro o algún negocio cercano)";
+        // AGREGADO: Placeholder editado con la frase solicitada
+        document.getElementById('dirCli').placeholder = "Ayúdanos a encontrarte Ej: (Casa color amarillo, portón negro o frente a la pulpería X)";
 
         const savedRepartidor = localStorage.getItem('ant_tel_repartidor');
         if(savedRepartidor) autoVerificar(savedRepartidor);
@@ -544,7 +335,6 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(), coords: coordsCliente
             });
 
-            // EDITADO: Se corrigió el formato del enlace para que sea funcional
             const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             const msg = `*NUEVO PEDIDO*%0A*Cliente:* ${nom}%0A*Teléfono:* ${tel}%0A*Servicio:* ${servicioSeleccionado}%0A*Detalle:* ${desc}%0A*Dirección:* ${dir}%0A*Mapa GPS:* ${mapsLink}`;
 
@@ -555,4 +345,5 @@
 
         } catch(e) { alert("Error de conexión."); }
     }
-</script>
+                                                                                               </script>
+                                                                                               
