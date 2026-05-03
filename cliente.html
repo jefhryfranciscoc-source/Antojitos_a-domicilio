@@ -150,7 +150,7 @@
     let idRepartidor = null;
     let numeroAdminEmpleo = "";
     let watchID = null;
-    let intervaloReintento = null; // Para auto-refresh GPS
+    let intervaloReintento = null; // Auto-refresh GPS
 
     let ejemplosAdmin = {
         MANDADO: "Ej: Necesito un galón de pintura blanca...",
@@ -358,18 +358,23 @@
         });
     }
 
-    // ===== GPS CON AUTO-REFRESH CADA 8 SEG =====
+    // ===== GPS CON AUTO-REFRESH + INSTRUCCIONES CLARAS =====
     function obtenerGPS() {
         if (!navigator.geolocation) {
             mostrarErrorGPS("Tu navegador no soporta GPS", "Usa Chrome o Safari actualizado");
             return;
         }
 
+        // Botón + cajita de instrucciones súper claras
         document.getElementById('avisoEsperaGPS').innerHTML = `
-            <button onclick="forzarPermisoGPS()" style="background:#3498db;color:white;border:none;padding:15px;border-radius:12px;width:100%;font-size:1em;font-weight:bold;cursor:pointer;">
-                📍 TOCA AQUÍ PARA ACTIVAR TU UBICACIÓN
+            <button onclick="forzarPermisoGPS()" style="background:#3498db;color:white;border:none;padding:15px;border-radius:12px;width:100%;font-size:1em;font-weight:bold;cursor:pointer;margin-bottom:10px;">
+                📍 TOCA ACÁ PARA ACTIVAR TU UBICACIÓN
             </button>
-            <p style="font-size:0.8em;margin-top:10px;color:#555;">Buscando GPS automáticamente...</p>
+            <div style="background:#e8f4fd;border:1px solid #b3d9ff;border-radius:8px;padding:12px;font-size:0.9em;color:#0c5460;text-align:left;">
+                <b>👆 Toca el botón de arriba</b><br>
+                Luego dale <b>"Permitir"</b> cuando tu celular pregunte.<br>
+                <span style="font-size:0.85em;">Si no sale nada, activa el GPS de tu celular primero.</span>
+            </div>
         `;
         document.getElementById('avisoEsperaGPS').onclick = null;
 
@@ -395,12 +400,12 @@
         if (intervaloReintento) return;
         intervaloReintento = setInterval(() => {
             if (!coordsCliente) {
-                console.log("Reintentando GPS...");
+                console.log("Reintentando GPS automático...");
                 intentarGPS();
             } else {
                 detenerAutoRefresh();
             }
-        }, 8000); // Cada 8 segundos
+        }, 8000); // Cada 8 segundos busca GPS solo
     }
 
     function detenerAutoRefresh() {
@@ -415,10 +420,9 @@
     }
 
     function forzarPermisoGPS() {
-        document.getElementById('textoGps').innerText = "Buscando señal GPS...";
+        document.getElementById('textoGps').innerText = "Buscando tu ubicación...";
         document.getElementById('puntoGps').className = "dot dot-rojo";
-        document.getElementById('avisoEsperaGPS').innerHTML = "⏳ Buscando tu ubicación...";
-        intentarGPS();
+        intentarGPS(); // Esto dispara el pop-up nativo si el permiso está en "preguntar"
     }
 
     function manejarErrorGPS(error) {
@@ -426,114 +430,12 @@
             detenerAutoRefresh();
             mostrarErrorGPSBloqueado();
         } else if (error.code === 2) { // POSITION_UNAVAILABLE
-            mostrarErrorGPS("📍 GPS Apagado", "Activa la Ubicación en los ajustes de tu celular");
+            mostrarErrorGPS("📍 GPS Apagado", "Ve a Ajustes de tu celular y activa Ubicación/GPS");
         } else if (error.code === 3) { // TIMEOUT
-            mostrarErrorGPS("⏳ Buscando GPS...", "Sal al aire libre o cerca de una ventana");
+            mostrarErrorGPS("⏳ Buscando GPS...", "Muévete al aire libre o cerca de una ventana");
         }
     }
 
     function mostrarErrorGPSBloqueado() {
         document.getElementById('textoGps').innerText = "🔒 GPS BLOQUEADO";
-        document.getElementById('puntoGps').className = "dot dot-rojo";
-        document.getElementById('avisoEsperaGPS').innerHTML = `
-            <button onclick="mostrarInstruccionesCandado()" style="background:#e74c3c;color:white;border:none;padding:15px;border-radius:12px;width:100%;font-size:1em;font-weight:bold;cursor:pointer;">
-                🔒 GPS BLOQUEADO - TOCA PARA ACTIVARLO
-            </button>
-        `;
-        document.getElementById('avisoEsperaGPS').classList.remove('hidden');
-    }
-
-    function mostrarInstruccionesCandado() {
-        alert(`Para activar el GPS:\n\n1. Toca el candado 🔒 arriba en la barra\n2. Busca "Ubicación" y cámbialo a "Permitir"\n3. Recarga la página`);
-    }
-
-    function mostrarErrorGPS(titulo, instruccion) {
-        document.getElementById('textoGps').innerText = titulo;
-        document.getElementById('puntoGps').className = "dot dot-rojo";
-        document.getElementById('avisoEsperaGPS').innerHTML = `
-            <button onclick="forzarPermisoGPS()" style="background:#e74c3c;color:white;border:none;padding:15px;border-radius:12px;width:100%;font-size:1em;font-weight:bold;cursor:pointer;">
-                ${titulo} - TOCA PARA REINTENTAR
-            </button>
-            <p style="font-size:0.85em;margin-top:10px;color:#333;"><b>${instruccion}</b></p>
-        `;
-        document.getElementById('avisoEsperaGPS').classList.remove('hidden');
-    }
-
-    function actualizarCoordenadas(pos) {
-        coordsCliente = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy
-        };
-
-        console.log(`GPS: ${coordsCliente.lat}, ${coordsCliente.lng} | Precisión: ${coordsCliente.accuracy}m`);
-
-        document.getElementById('indicadorGPS').className = "status-gps gps-listo";
-        document.getElementById('textoGps').innerText = `📍 UBICACIÓN LISTA ±${Math.round(coordsCliente.accuracy)}m`;
-        document.getElementById('puntoGps').className = "dot dot-verde";
-        const avisoEspera = document.getElementById('avisoEsperaGPS');
-        if(avisoEspera) avisoEspera.classList.add('hidden');
-
-        detenerAutoRefresh();
-
-        db.collection("usuarios")
-      .where("rol", "==", "REPARTIDOR")
-      .where("disponible", "==", true)
-      .get().then(snap => {
-                if(!snap.empty && tiendaAbierta) {
-                    const btn = document.getElementById('btnPedirFinal');
-                    btn.disabled = false;
-                    btn.innerText = "🚀 ENVIAR SOLICITUD";
-                    btn.style.background = "#e67e22";
-                }
-            });
-    }
-    // ===== FIN GPS MEJORADO =====
-
-    async function lanzarPedido() {
-        const nom = document.getElementById('nombreCli').value;
-        const tel = document.getElementById('telCli').value;
-        const dir = document.getElementById('dirCli').value;
-        const desc = document.getElementById('detallePedido').value;
-
-        if(!nom ||!tel ||!dir ||!desc) return alert("Completa los campos.");
-        if(!coordsCliente) return alert("Esperando señal GPS...");
-
-        if(coordsCliente.accuracy > 20) {
-            let continuar = confirm(`Tu GPS tiene ${Math.round(coordsCliente.accuracy)}m de error. ¿Seguro que estás al aire libre? El repartidor podría no encontrarte fácil. ¿Continuar?`);
-            if(!continuar) return;
-        }
-
-        localStorage.setItem('ant_nom', nom);
-        localStorage.setItem('ant_tel', tel);
-
-        try {
-            const snapRepartidores = await db.collection("usuarios").where("rol", "==", "REPARTIDOR").where("disponible", "==", true).get();
-            if (snapRepartidores.empty) return alert("No hay repartidores activos.");
-
-            const lista = snapRepartidores.docs;
-            const elegido = lista[Math.floor(Math.random() * lista.length)].data();
-
-            await db.collection("pedidos").add({
-                cliente: nom, telefono: tel, ubicacion: dir, detalle: desc,
-                tipo: servicioSeleccionado, estado: "NUEVO", repartidorAsignado: elegido.nombre,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                coords: coordsCliente,
-                precision: coordsCliente.accuracy
-            });
-
-            const mapsLink = `https://www.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}&ll=${coordsCliente.lat},${coordsCliente.lng}&z=20`;
-
-            const msg = `*NUEVO PEDIDO - ANTOJITOS*\n*Cliente:* ${nom}\n*Teléfono:* ${tel}\n*Servicio:* ${servicioSeleccionado}\n*Detalle:* ${desc}\n*Dirección:* ${dir}\n*Precisión GPS:* ±${Math.round(coordsCliente.accuracy)}m\n*Mapa GPS:* ${mapsLink}`;
-
-            window.location.href = `https://wa.me/505${elegido.telefono}?text=${encodeURIComponent(msg)}`;
-
-            document.getElementById('vistaPedido').classList.add('hidden');
-            document.getElementById('pantallaEstado').classList.remove('hidden');
-
-        } catch(e) {
-            console.error(e);
-            alert("Error de conexión.");
-        }
-    }
-</script>
+        document.getElementById('puntoGps').className
