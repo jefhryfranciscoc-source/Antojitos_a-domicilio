@@ -283,6 +283,8 @@
     let esRepartidor = false;
     let idRepartidor = null;
     let numeroAdminEmpleo = "";
+    let watchId = null; // Para controlar el watchPosition
+    let retryTimer = null; // Para reintento automático
 
     let ejemplosAdmin = {
         MANDADO: "Ej: Necesito un galón de pintura blanca...",
@@ -294,13 +296,20 @@
     window.onload = () => {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
-                .then(() => console.log("Servicio de App Activo"))
-                .catch(err => console.log("Error al activar App", err));
+               .then(() => console.log("Servicio de App Activo"))
+               .catch(err => console.log("Error al activar App", err));
         }
 
-        obtenerGPS(); // Se activa solo al cargar
+        iniciarGPS(); // Cambié el nombre para que quede más claro
         cargarConfig();
         vigilarRepartidores();
+
+        // Detecta cuando vuelves a la app desde otra ventana
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' &&!coordsCliente) {
+                iniciarGPS();
+            }
+        });
 
         const savedNom = localStorage.getItem('ant_nom') || "";
         const savedTel = localStorage.getItem('ant_tel') || "";
@@ -315,9 +324,9 @@
 
     function vigilarRepartidores() {
         db.collection("usuarios")
-       .where("rol", "==", "REPARTIDOR")
-       .where("disponible", "==", true)
-       .onSnapshot(snap => {
+      .where("rol", "==", "REPARTIDOR")
+      .where("disponible", "==", true)
+      .onSnapshot(snap => {
                 const aviso = document.getElementById('avisoNoRepartidores');
                 const statusTag = document.getElementById('statusHorario');
 
@@ -332,7 +341,6 @@
                         if(aviso) aviso.classList.add('hidden');
                     }
                 }
-                // Llamamos a la prioridad del botón
                 if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
             });
     }
@@ -378,7 +386,6 @@
         });
     }
 
-    // --- FUNCIONES DE VISTA Y LOGIN (SIN CAMBIOS) ---
     function seleccionarServicio(tipo) {
         servicioSeleccionado = tipo;
         document.querySelectorAll('.btn-servicio').forEach(btn => btn.classList.remove('activo'));
@@ -479,27 +486,52 @@
         });
     }
 
-    // ===== GPS AUTOMÁTICO (CORREGIDO) =====
-    function obtenerGPS() {
+    // ===== GPS AUTOMÁTICO CORREGIDO =====
+    function iniciarGPS() {
         if (!navigator.geolocation) {
             mostrarErrorGPS("Tu navegador no soporta GPS", "Usa Chrome");
             return;
         }
 
-        // Activamos el vigilante de inmediato
-        navigator.geolocation.watchPosition((pos) => {
-            // Si no tenemos coordenadas o las nuevas son más precisas, actualizamos
+        // Limpiamos watch anterior si existe
+        if (watchId!== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+
+        // Limpiamos timer de reintento si existe
+        if (retryTimer) {
+            clearTimeout(retryTimer);
+            retryTimer = null;
+        }
+
+        document.getElementById('textoGps').innerText = "Buscando señal GPS...";
+        document.getElementById('puntoGps').className = "dot dot-rojo";
+
+        watchId = navigator.geolocation.watchPosition((pos) => {
+            // Si llegamos aquí, el GPS funciona. Cancelamos reintentos
+            if (retryTimer) {
+                clearTimeout(retryTimer);
+                retryTimer = null;
+            }
+
             if (!coordsCliente || pos.coords.accuracy <= coordsCliente.accuracy) {
                 actualizarCoordenadas(pos);
             }
         }, (error) => {
-            console.log("Esperando señal GPS...", error.code);
+            console.log("Error GPS:", error.code);
             if (error.code === 1) {
                 mostrarErrorGPS("❌ Permiso Denegado", "Acepta el permiso de ubicación");
+                if (retryTimer) clearTimeout(retryTimer); // No reintentar si denegó
             } else {
-                // Si es error 2 o 3, solo mostramos que está buscando
                 document.getElementById('textoGps').innerText = "Buscando señal GPS...";
                 document.getElementById('puntoGps').className = "dot dot-rojo";
+                // Reintento automático cada 5 segundos si GPS apagado o sin señal
+                if (!retryTimer) {
+                    retryTimer = setTimeout(() => {
+                        iniciarGPS();
+                    }, 5000);
+                }
             }
         }, {
             enableHighAccuracy: true,
@@ -509,7 +541,7 @@
     }
 
     function forzarPermisoGPS() {
-        obtenerGPS();
+        iniciarGPS();
     }
 
     function mostrarErrorGPS(titulo, instruccion) {
@@ -535,11 +567,10 @@
         document.getElementById('indicadorGPS').className = "status-gps gps-listo";
         document.getElementById('textoGps').innerText = `📍 UBICACIÓN LISTA ±${Math.round(coordsCliente.accuracy)}m`;
         document.getElementById('puntoGps').className = "dot dot-verde";
-        
+
         const avisoEspera = document.getElementById('avisoEsperaGPS');
         if(avisoEspera) avisoEspera.classList.add('hidden');
 
-        // Al recibir coordenadas, refrescamos el estado del botón principal
         if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
     }
 
@@ -588,4 +619,4 @@
             alert("Error de conexión.");
         }
     }
-</script>
+                </script>
