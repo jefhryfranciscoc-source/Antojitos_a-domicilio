@@ -1,5 +1,5 @@
-const CACHE_NAME = 'antojitos-cache-v5';
-const urlsToCache = ['./', 'index.html'];
+const CACHE_NAME = 'antojitos-cache-v6';
+const urlsToCache = ['/', 'index.html'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -13,3 +13,9 @@ self.addEventListener('fetch', event => {
   );
 });
 
+// ESTE ES EL NUEVO - pégalo al final
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
