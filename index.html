@@ -285,6 +285,7 @@
     let numeroAdminEmpleo = "";
     let watchId = null; // Para controlar el watchPosition
     let retryTimer = null; // Para reintento automático
+    let enviandoPedido = false; // Candado anti doble-click
 
     let ejemplosAdmin = {
         MANDADO: "Ej: Necesito un galón de pintura blanca...",
@@ -296,8 +297,8 @@
     window.onload = () => {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
-               .then(() => console.log("Servicio de App Activo"))
-               .catch(err => console.log("Error al activar App", err));
+              .then(() => console.log("Servicio de App Activo"))
+              .catch(err => console.log("Error al activar App", err));
         }
 
         iniciarGPS(); // Cambié el nombre para que quede más claro
@@ -324,9 +325,9 @@
 
     function vigilarRepartidores() {
         db.collection("usuarios")
-      .where("rol", "==", "REPARTIDOR")
-      .where("disponible", "==", true)
-      .onSnapshot(snap => {
+     .where("rol", "==", "REPARTIDOR")
+     .where("disponible", "==", true)
+     .onSnapshot(snap => {
                 const aviso = document.getElementById('avisoNoRepartidores');
                 const statusTag = document.getElementById('statusHorario');
 
@@ -575,6 +576,10 @@
     }
 
     async function lanzarPedido() {
+        // Candado: si ya se está enviando, no hace nada
+        if (enviandoPedido) return;
+
+        const btnPedir = document.getElementById('btnPedirFinal');
         const nom = document.getElementById('nombreCli').value;
         const tel = document.getElementById('telCli').value;
         const dir = document.getElementById('dirCli').value;
@@ -588,12 +593,25 @@
             if(!continuar) return;
         }
 
+        // Activamos el candado y bloqueamos el botón
+        enviandoPedido = true;
+        btnPedir.disabled = true;
+        btnPedir.innerText = "⏳ ENVIANDO...";
+        btnPedir.style.background = "#95a5a6";
+
         localStorage.setItem('ant_nom', nom);
         localStorage.setItem('ant_tel', tel);
 
         try {
             const snapRepartidores = await db.collection("usuarios").where("rol", "==", "REPARTIDOR").where("disponible", "==", true).get();
-            if (snapRepartidores.empty) return alert("No hay repartidores activos.");
+
+            if (snapRepartidores.empty) {
+                alert("No hay repartidores activos.");
+                // Si falla, quitamos el candado y reactivamos botón
+                enviandoPedido = false;
+                if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
+                return;
+            }
 
             const lista = snapRepartidores.docs;
             const elegido = lista[Math.floor(Math.random() * lista.length)].data();
@@ -617,6 +635,9 @@
         } catch(e) {
             console.error(e);
             alert("Error de conexión.");
+            // Si hay error, quitamos candado para que pueda reintentar
+            enviandoPedido = false;
+            if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
         }
     }
-                </script>
+</script>
