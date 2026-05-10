@@ -1,10 +1,15 @@
-const CACHE_NAME = 'antojitos-cache-v9';
+const CACHE_NAME = 'antojitos-cache-v10';
 const urlsToCache = ['/', 'index.html'];
 
 self.addEventListener('install', event => {
+  self.skipWaiting(); // <- Esto hace que v7 mate a v6 sin pedir permiso
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(clients.claim()); // <- Esto toma control de inmediato
 });
 
 self.addEventListener('fetch', event => {
