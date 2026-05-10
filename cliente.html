@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Antojitos Pueblo Nuevo - Servicios</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#e67e22">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.png">
+
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <style>
@@ -11,12 +18,39 @@
         body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 15px; }
         .hidden { display: none !important; }
         .card { background: white; padding: 10px 20px 25px 20px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 500px; margin: auto; position: relative; }
-        .horario-tag { display: block; text-align: center; font-size: 0.75em; padding: 5px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
         
-        /* ESTADOS DE COLORES */
-        .abierto { background: #e8f5e9; color: #2e7d32; }
-        .cerrado { background: #ffebee; color: #c62828; }
-        .pausado { background: #fff9db; color: #d35400; }
+        /* BOTÓN DISCRETO PARA INSTALAR */
+        #btnInstalarPWA {
+            display: none;
+            background: none;
+            color: var(--azul);
+            border: 1px solid var(--azul);
+            width: 100%;
+            padding: 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            cursor: pointer;
+        }
+
+        /* --- BOTÓN DE ESTADO RE-AGRANDADO --- */
+        .horario-tag { 
+            display: block; 
+            text-align: center; 
+            font-size: 1.4em; /* ¡Más grande aún! */
+            padding: 18px;    /* Más espacio */
+            border-radius: 20px; 
+            margin-bottom: 20px; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            letter-spacing: 1.5px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        }
+        
+        .abierto { background: #e8f5e9; color: #2e7d32; border: 3px solid #2ecc71; }
+        .cerrado { background: #ffebee; color: #c62828; border: 3px solid #e74c3c; }
+        .pausado { background: #fff9db; color: #d35400; border: 3px solid #f1c40f; }
 
         h2 { color: var(--naranja); text-align: center; margin-bottom: 5px; }
         .nav-menu { display: flex; gap: 5px; margin-bottom: 15px; }
@@ -52,6 +86,8 @@
 <div class="card">
     <div id="statusHorario" class="horario-tag abierto">🟢 ABIERTO</div>
     
+    <button id="btnInstalarPWA">📲 Instalar Aplicación</button>
+
     <div id="menuNavegacion" class="nav-menu">
         <button id="navCliente" class="btn-nav active" onclick="switchView('cliente')">👤 MODO CLIENTE</button>
         <button id="navRepartidor" class="btn-nav" onclick="switchView('repartidor_login')">🚴 MODO REPARTIDOR</button>
@@ -83,10 +119,10 @@
         </div>
         <div class="area-total">
             <div id="avisoNoRepartidores" class="hidden">
-                ⚠️ Lo sentimos, no hay repartidores activos en este momento.
+                ⚠️ Lo sentimos, no hay repartidores disponibles en este momento, intenté mas tarde.
             </div>
             
-            <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()" disabled>⚠️ ACTIVA TU GPS</button>
+            <button id="btnPedirFinal" class="btn-pedir" onclick="lanzarPedido()" disabled>⚠️ PORFAVOR ACTIVA TU GPS</button>
             <a id="btnVerProductos" href="#" target="_blank" class="btn-productos hidden">🛒 Ver Precios y Productos</a>
         </div>
     </div>
@@ -129,6 +165,74 @@
         <button class="btn-pedir" onclick="location.reload()">NUEVA SOLICITUD</button>
     </div>
 </div>
+
+<script>
+    // LÓGICA DISCRETA PARA INSTALACIÓN APK
+    let promptInstalacion;
+    const btnInstalar = document.getElementById('btnInstalarPWA');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        promptInstalacion = e;
+        btnInstalar.style.display = 'block'; 
+    });
+
+    btnInstalar.addEventListener('click', async () => {
+        if (promptInstalacion) {
+            promptInstalacion.prompt();
+            const { outcome } = await promptInstalacion.userChoice;
+            if (outcome === 'accepted') {
+                btnInstalar.style.display = 'none';
+            }
+            promptInstalacion = null;
+        }
+    });
+
+    function verificarEstadoGlobal() {
+        const statusTag = document.getElementById('statusHorario');
+        const btnPedirFinal = document.getElementById('btnPedirFinal');
+        const avisoNoRep = document.getElementById('avisoNoRepartidores');
+
+        if (!statusTag || !btnPedirFinal) return;
+
+        const textoEstado = statusTag.innerText.toUpperCase();
+        const esCerrado = textoEstado.includes("CERRADO") || statusTag.classList.contains("cerrado");
+        const sinRepartidores = !avisoNoRep.classList.contains("hidden");
+
+        if (esCerrado || sinRepartidores) {
+            btnPedirFinal.innerText = "🚫 Estamos cerrados por el momento. Vuelva en otra ocasión.";
+            btnPedirFinal.style.backgroundColor = "#b2bec3"; 
+            btnPedirFinal.style.color = "#333";
+            btnPedirFinal.style.pointerEvents = "none";
+            btnPedirFinal.style.fontSize = "0.85em";
+            btnPedirFinal.disabled = true;
+        } else {
+            if (btnPedirFinal.style.backgroundColor === "rgb(178, 190, 195)") {
+                btnPedirFinal.style.backgroundColor = ""; 
+                btnPedirFinal.style.color = "";
+                btnPedirFinal.style.pointerEvents = "auto";
+                btnPedirFinal.style.fontSize = "1.1em";
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        verificarEstadoGlobal();
+        const observerStatus = new MutationObserver(verificarEstadoGlobal);
+        observerStatus.observe(document.getElementById('statusHorario'), { 
+            childList: true, 
+            attributes: true, 
+            characterData: true, 
+            subtree: true 
+        });
+        const observerAviso = new MutationObserver(verificarEstadoGlobal);
+        observerAviso.observe(document.getElementById('avisoNoRepartidores'), { 
+            attributes: true, 
+            attributeFilter: ['class'] 
+        });
+    });
+</script>
+
 </body>
 </html>
 <script>
@@ -158,6 +262,13 @@
     };
 
     window.onload = () => {
+        // --- ACTIVADOR DE APP (PWA) ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log("Servicio de App Activo"))
+                .catch(err => console.log("Error al activar App", err));
+        }
+
         obtenerGPS();
         cargarConfig();
         vigilarRepartidores();
@@ -184,7 +295,7 @@
 
                 if (tiendaAbierta) {
                     if (snap.empty) {
-                        statusTag.innerText = "🟡 PAUSADO - No hay repartidores";
+                        statusTag.innerText = "🟡 PAUSADO - Todos nuestros repartidores estan ocupados haciendo pedidos";
                         statusTag.className = "horario-tag pausado";
                     } else {
                         statusTag.innerText = "🟢 ABIERTO";
@@ -196,7 +307,7 @@
                     if(aviso) aviso.classList.remove('hidden');
                     if(btnPedir) {
                         btnPedir.disabled = true;
-                        btnPedir.innerText = "🚫 NO HAY REPARTIDORES";
+                        btnPedir.innerText = "🚫 NO HAY REPARTIDORES, Intente nuevamente en 15 minutos";
                         btnPedir.style.background = "#95a5a6";
                     }
                 } else {
@@ -204,7 +315,7 @@
                     if(btnPedir) {
                         if(!coordsCliente) {
                             btnPedir.disabled = true;
-                            btnPedir.innerText = "⚠️ ACTIVA TU GPS";
+                            btnPedir.innerText = "⚠️ PORFAVOR ACTIVA TU GPS PARA SABER DÓNDE LLEVAR TU PEDIDO";
                             btnPedir.style.background = "#ccc";
                         } else if(tiendaAbierta) {
                             btnPedir.disabled = false;
@@ -363,7 +474,6 @@
             return;
         }
 
-        // Cambiamos el aviso para que sea un botón clickeable
         document.getElementById('avisoEsperaGPS').innerHTML = `
             <button onclick="forzarPermisoGPS()" style="background:#3498db;color:white;border:none;padding:15px;border-radius:12px;width:100%;font-size:1em;font-weight:bold;cursor:pointer;">
                 📍 TOCA AQUÍ PARA ACTIVAR TU UBICACIÓN
@@ -389,11 +499,11 @@
 
         }, (error) => {
             console.log("Error GPS inicial:", error);
-            if (error.code === 1) { // PERMISSION_DENIED
+            if (error.code === 1) {
                 mostrarErrorGPS("❌ Permiso de GPS Denegado", "Toca el botón y acepta el permiso cuando el navegador pregunte");
-            } else if (error.code === 2) { // POSITION_UNAVAILABLE
+            } else if (error.code === 2) {
                 mostrarErrorGPS("📍 GPS Apagado", "Activa la Ubicación en los ajustes de tu celular y toca el botón");
-            } else if (error.code === 3) { // TIMEOUT
+            } else if (error.code === 3) {
                 mostrarErrorGPS("⏳ No encontramos tu ubicación", "Sal al aire libre o cerca de una ventana y toca el botón");
             }
         }, {
@@ -429,8 +539,6 @@
             accuracy: pos.coords.accuracy
         };
 
-        console.log(`GPS: ${coordsCliente.lat}, ${coordsCliente.lng} | Precisión: ${coordsCliente.accuracy}m`);
-
         document.getElementById('indicadorGPS').className = "status-gps gps-listo";
         document.getElementById('textoGps').innerText = `📍 UBICACIÓN LISTA ±${Math.round(coordsCliente.accuracy)}m`;
         document.getElementById('puntoGps').className = "dot dot-verde";
@@ -449,7 +557,6 @@
                 }
             });
     }
-    // ===== FIN GPS MEJORADO =====
 
     async function lanzarPedido() {
         const nom = document.getElementById('nombreCli').value;
@@ -483,9 +590,7 @@
                 precision: coordsCliente.accuracy
             });
 
-            // CAMBIO: Este link NO se pierde nunca. El repartidor lo puede abrir 100 veces
-            const mapsLink = `https://www.google.com/maps/place/${coordsCliente.lat},${coordsCliente.lng}/@${coordsCliente.lat},${coordsCliente.lng},20z`;
-
+            const mapsLink = `http://maps.google.com/maps?q=${coordsCliente.lat},${coordsCliente.lng}`;
             const msg = `*NUEVO PEDIDO - ANTOJITOS*\n\n*Cliente:* ${nom}\n*Teléfono:* ${tel}\n*Servicio:* ${servicioSeleccionado}\n*Detalle:* ${desc}\n*Dirección:* ${dir}\n*Precisión GPS:* ±${Math.round(coordsCliente.accuracy)}m\n\n*📍 UBICACIÓN EXACTA:* ${mapsLink}`;
 
             window.location.href = `https://wa.me/505${elegido.telefono}?text=${encodeURIComponent(msg)}`;
@@ -498,4 +603,4 @@
             alert("Error de conexión.");
         }
     }
-            </script>
+                    </script>
