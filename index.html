@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -42,11 +41,25 @@
             font-size: 1.4em; 
             padding: 18px;    
             border-radius: 20px; 
-            margin-bottom: 20px; 
+            margin-bottom: 5px; /* Reducido para que la advertencia quede cerca */
             font-weight: 900; 
             text-transform: uppercase; 
             letter-spacing: 1.5px;
             box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+        }
+
+        /* ESTILO ADVERTENCIA LEGAL */
+        .advertencia-falsos {
+            display: block;
+            color: var(--rojo);
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.85em;
+            margin-bottom: 15px;
+            padding: 5px;
+            border: 1px solid var(--rojo);
+            border-radius: 10px;
+            background: #fff5f5;
         }
         
         .abierto { background: #e8f5e9; color: #2e7d32; border: 3px solid #2ecc71; }
@@ -79,7 +92,7 @@
         /* --- BOTÓN FLOTANTE EDITADO --- */
         .btn-productos { 
             position: fixed; 
-            bottom: 115px; /* Altura para quedar arriba del botón de pedir */
+            bottom: 115px; 
             right: 20px; 
             display: inline-block; 
             background: var(--blanco); 
@@ -108,6 +121,8 @@
 <div class="card">
     <div id="statusHorario" class="horario-tag abierto">🟢 ABIERTO</div>
     
+    <div class="advertencia-falsos">⚠️HACER PEDIDOS FALSOS CONLLEVA A PROBLEMAS LEGALES⚠️</div>
+
     <button id="btnInstalarPWA">📲 Instalar Aplicación</button>
 
     <div id="menuNavegacion" class="nav-menu">
@@ -295,11 +310,18 @@
               .catch(err => console.log("Error al activar App", err));
         }
 
-        iniciarGPS(); // Cambié el nombre para que quede más claro
+        // --- LÓGICA PARA ATRAPAR MENSAJE DEL CATÁLOGO ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const pedidoCapturado = urlParams.get('pedido');
+        if (pedidoCapturado) {
+            document.getElementById('detallePedido').value = decodeURIComponent(pedidoCapturado);
+            seleccionarServicio('COMIDA'); 
+        }
+
+        iniciarGPS(); 
         cargarConfig();
         vigilarRepartidores();
 
-        // Detecta cuando vuelves a la app desde otra ventana
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' &&!coordsCliente) {
                 iniciarGPS();
@@ -590,7 +612,7 @@
         // Activamos el candado y bloqueamos el botón
         enviandoPedido = true;
         btnPedir.disabled = true;
-        btnPedir.innerText = "⏳ ENVIANDO...";
+        btnPedir.innerText = "⏳ ASIGNANDO REPARTIDOR...";
         btnPedir.style.background = "#95a5a6";
 
         localStorage.setItem('ant_nom', nom);
@@ -601,18 +623,41 @@
 
             if (snapRepartidores.empty) {
                 alert("No hay repartidores activos.");
-                // Si falla, quitamos el candado y reactivamos botón
                 enviandoPedido = false;
                 if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
                 return;
             }
 
-            const lista = snapRepartidores.docs;
-            const elegido = lista[Math.floor(Math.random() * lista.length)].data();
+            // --- LÓGICA DE FILA INTELIGENTE ---
+            let listaRepartidores = [];
+            snapRepartidores.forEach(doc => {
+                listaRepartidores.push({ id: doc.id, ...doc.data() });
+            });
 
+            // Ordenamos: 1. Los que tienen menos pedidos (NUEVOS PRIMERO). 2. El que lleva más tiempo esperando.
+            listaRepartidores.sort((a, b) => {
+                const totalA = a.pedidosTotales || 0;
+                const totalB = b.pedidosTotales || 0;
+                if (totalA !== totalB) return totalA - totalB;
+
+                const timeA = a.ultimoPedidoTime ? a.ultimoPedidoTime.toMillis() : 0;
+                const timeB = b.ultimoPedidoTime ? b.ultimoPedidoTime.toMillis() : 0;
+                return timeA - timeB;
+            });
+
+            const elegido = listaRepartidores[0];
+
+            // Marcamos su turno como usado: subimos contador y actualizamos hora
+            await db.collection("usuarios").doc(elegido.id).update({
+                pedidosTotales: firebase.firestore.FieldValue.increment(1),
+                ultimoPedidoTime: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // Creamos el pedido en Firebase
             await db.collection("pedidos").add({
                 cliente: nom, telefono: tel, ubicacion: dir, detalle: desc,
                 tipo: servicioSeleccionado, estado: "NUEVO", repartidorAsignado: elegido.nombre,
+                idRepartidor: elegido.id,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                 coords: coordsCliente,
                 precision: coordsCliente.accuracy
@@ -629,9 +674,8 @@
         } catch(e) {
             console.error(e);
             alert("Error de conexión.");
-            // Si hay error, quitamos candado para que pueda reintentar
             enviandoPedido = false;
             if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
         }
     }
-</script>
+                        </script>
