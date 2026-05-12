@@ -292,9 +292,9 @@
     let esRepartidor = false;
     let idRepartidor = null;
     let numeroAdminEmpleo = "";
-    let watchId = null; // Para controlar el watchPosition
-    let retryTimer = null; // Para reintento automático
-    let enviandoPedido = false; // Candado anti doble-click
+    let watchId = null;
+    let retryTimer = null;
+    let enviandoPedido = false;
 
     let ejemplosAdmin = {
         MANDADO: "Ej: Necesito un galón de pintura blanca...",
@@ -306,21 +306,14 @@
     window.onload = () => {
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
-              .then(() => console.log("Servicio de App Activo"))
-              .catch(err => console.log("Error al activar App", err));
+             .then(() => console.log("Servicio de App Activo"))
+             .catch(err => console.log("Error al activar App", err));
         }
 
-        // --- LÓGICA PARA ATRAPAR MENSAJE DEL CATÁLOGO ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const pedidoCapturado = urlParams.get('pedido');
-        if (pedidoCapturado) {
-            document.getElementById('detallePedido').value = decodeURIComponent(pedidoCapturado);
-            seleccionarServicio('COMIDA'); 
-        }
-
-        iniciarGPS(); 
+        iniciarGPS();
         cargarConfig();
         vigilarRepartidores();
+        leerCarritoDelCatalogo();
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible' &&!coordsCliente) {
@@ -339,11 +332,33 @@
         if(savedRepartidor) autoVerificar(savedRepartidor);
     };
 
+    function leerCarritoDelCatalogo() {
+        const carritoGuardado = localStorage.getItem('carritoConfirmado');
+        if (!carritoGuardado) return;
+
+        const carrito = JSON.parse(carritoGuardado);
+        if (carrito.length === 0) return;
+
+        let textoPedido = `Pedido desde catálogo:\n\n`;
+        carrito.forEach((item, i) => {
+            textoPedido += `${i+1}. 📍 ${item.local}\n`;
+            textoPedido += ` 📦 ${item.nombre}`;
+            if (item.variante) textoPedido += ` - ${item.variante}`;
+            textoPedido += `\n\n`;
+        });
+        textoPedido += `---\nPuedes agregar más detalles aquí abajo:`;
+
+        document.getElementById('detallePedido').value = textoPedido;
+        seleccionarServicio('COMIDA');
+
+        localStorage.removeItem('carritoConfirmado');
+    }
+
     function vigilarRepartidores() {
         db.collection("usuarios")
-     .where("rol", "==", "REPARTIDOR")
-     .where("disponible", "==", true)
-     .onSnapshot(snap => {
+    .where("rol", "==", "REPARTIDOR")
+    .where("disponible", "==", true)
+    .onSnapshot(snap => {
                 const aviso = document.getElementById('avisoNoRepartidores');
                 const statusTag = document.getElementById('statusHorario');
 
@@ -503,20 +518,17 @@
         });
     }
 
-    // ===== GPS AUTOMÁTICO CORREGIDO =====
     function iniciarGPS() {
         if (!navigator.geolocation) {
             mostrarErrorGPS("Tu navegador no soporta GPS", "Usa Chrome");
             return;
         }
 
-        // Limpiamos watch anterior si existe
         if (watchId!== null) {
             navigator.geolocation.clearWatch(watchId);
             watchId = null;
         }
 
-        // Limpiamos timer de reintento si existe
         if (retryTimer) {
             clearTimeout(retryTimer);
             retryTimer = null;
@@ -526,7 +538,6 @@
         document.getElementById('puntoGps').className = "dot dot-rojo";
 
         watchId = navigator.geolocation.watchPosition((pos) => {
-            // Si llegamos aquí, el GPS funciona. Cancelamos reintentos
             if (retryTimer) {
                 clearTimeout(retryTimer);
                 retryTimer = null;
@@ -539,11 +550,10 @@
             console.log("Error GPS:", error.code);
             if (error.code === 1) {
                 mostrarErrorGPS("❌ Permiso Denegado", "Acetiva tu GPS y reintenta ⬆️ nuevamente");
-                if (retryTimer) clearTimeout(retryTimer); // No reintentar si denegó
+                if (retryTimer) clearTimeout(retryTimer);
             } else {
                 document.getElementById('textoGps').innerText = "Buscando señal GPS...";
                 document.getElementById('puntoGps').className = "dot dot-rojo";
-                // Reintento automático cada 5 segundos si GPS apagado o sin señal
                 if (!retryTimer) {
                     retryTimer = setTimeout(() => {
                         iniciarGPS();
@@ -592,7 +602,6 @@
     }
 
     async function lanzarPedido() {
-        // Candado: si ya se está enviando, no hace nada
         if (enviandoPedido) return;
 
         const btnPedir = document.getElementById('btnPedirFinal');
@@ -609,7 +618,6 @@
             if(!continuar) return;
         }
 
-        // Activamos el candado y bloqueamos el botón
         enviandoPedido = true;
         btnPedir.disabled = true;
         btnPedir.innerText = "⏳ ASIGNANDO REPARTIDOR...";
@@ -628,32 +636,28 @@
                 return;
             }
 
-            // --- LÓGICA DE FILA INTELIGENTE ---
             let listaRepartidores = [];
             snapRepartidores.forEach(doc => {
-                listaRepartidores.push({ id: doc.id, ...doc.data() });
+                listaRepartidores.push({ id: doc.id,...doc.data() });
             });
 
-            // Ordenamos: 1. Los que tienen menos pedidos (NUEVOS PRIMERO). 2. El que lleva más tiempo esperando.
             listaRepartidores.sort((a, b) => {
                 const totalA = a.pedidosTotales || 0;
                 const totalB = b.pedidosTotales || 0;
-                if (totalA !== totalB) return totalA - totalB;
+                if (totalA!== totalB) return totalA - totalB;
 
-                const timeA = a.ultimoPedidoTime ? a.ultimoPedidoTime.toMillis() : 0;
-                const timeB = b.ultimoPedidoTime ? b.ultimoPedidoTime.toMillis() : 0;
+                const timeA = a.ultimoPedidoTime? a.ultimoPedidoTime.toMillis() : 0;
+                const timeB = b.ultimoPedidoTime? b.ultimoPedidoTime.toMillis() : 0;
                 return timeA - timeB;
             });
 
             const elegido = listaRepartidores[0];
 
-            // Marcamos su turno como usado: subimos contador y actualizamos hora
             await db.collection("usuarios").doc(elegido.id).update({
                 pedidosTotales: firebase.firestore.FieldValue.increment(1),
                 ultimoPedidoTime: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // Creamos el pedido en Firebase
             await db.collection("pedidos").add({
                 cliente: nom, telefono: tel, ubicacion: dir, detalle: desc,
                 tipo: servicioSeleccionado, estado: "NUEVO", repartidorAsignado: elegido.nombre,
@@ -678,4 +682,4 @@
             if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
         }
     }
-                        </script>
+                            </script>
