@@ -339,18 +339,29 @@
         const carrito = JSON.parse(carritoGuardado);
         if (carrito.length === 0) return;
 
-        let textoPedido = `Pedido desde catálogo:\n\n`;
+        let textoPedido = `*PEDIDO DESDE CATÁLOGO:*\n\n`;
         carrito.forEach((item, i) => {
             textoPedido += `${i+1}. 📍 ${item.local}\n`;
-            textoPedido += ` 📦 ${item.nombre}`;
+            textoPedido += `   📦 ${item.nombre}`;
             if (item.variante) textoPedido += ` - ${item.variante}`;
+            
+            // Si el producto trae notas específicas desde el catálogo, las agregamos
+            if (item.notas && item.notas.trim() !== "") {
+                textoPedido += `\n   📝 Detalle: ${item.notas}`;
+            }
             textoPedido += `\n\n`;
         });
-        textoPedido += `---\nPuedes agregar más detalles aquí abajo:`;
 
-        document.getElementById('detallePedido').value = textoPedido;
+        // Se eliminó la línea del mensaje estático "Puedes agregar más detalles..."
+        const areaDetalle = document.getElementById('detallePedido');
+        areaDetalle.value = textoPedido;
+        
+        // Auto-scroll al final para que sea más intuitivo revisar y seguir escribiendo
+        setTimeout(() => {
+            areaDetalle.scrollTop = areaDetalle.scrollHeight;
+        }, 100);
+
         seleccionarServicio('COMIDA');
-
         localStorage.removeItem('carritoConfirmado');
     }
 
@@ -682,4 +693,4 @@
             if(typeof verificarEstadoGlobal === "function") verificarEstadoGlobal();
         }
     }
-                            </script>
+        </script>
