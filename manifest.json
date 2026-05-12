@@ -2,7 +2,7 @@
   "name": "Antojitos Pueblo Nuevo",
   "short_name": "Antojitos",
   "description": "Servicios de mandados y limpieza en Pueblo Nuevo",
-  "start_url": "index.html",
+  "start_url": "catalogo.html",
   "display": "standalone",
   "background_color": "#f0f2f5",
   "theme_color": "#e67e22",
