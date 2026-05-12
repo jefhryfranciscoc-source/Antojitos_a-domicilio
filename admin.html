@@ -19,9 +19,22 @@
         .tab-content { display: none; padding: 15px; }
         .tab-content.active { display: block; }
         
+        /* Estilos para el Acordeón */
+        .repartidor-group { margin-bottom: 10px; border-radius: 10px; overflow: hidden; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .repartidor-header { 
+            background: #fff; border-bottom: 1px solid #eee; padding: 15px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            cursor: pointer; font-weight: bold; color: var(--oscuro);
+        }
+        .repartidor-header:active { background: #f9f9f9; }
+        .pedidos-container { display: none; padding: 10px; background: #fafafa; }
+        .pedidos-container.show { display: block; }
+        .badge-cuenta { background: var(--naranja); color: white; padding: 2px 8px; border-radius: 20px; font-size: 0.8em; }
+
         .card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .pedido-card { border-left: 6px solid var(--azul); position: relative; }
         .fecha-orden { font-size: 0.75em; color: #7f8c8d; display: block; margin-bottom: 8px; font-weight: bold; }
+        .num-pedido { position: absolute; top: 15px; right: 15px; background: #eee; padding: 2px 7px; border-radius: 5px; font-size: 0.7em; font-weight: bold; color: var(--oscuro); }
 
         .btn-acc { background: var(--verde); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.8em; }
         .btn-borrar { background: var(--rojo); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
@@ -237,27 +250,67 @@
         alert("Ajustes actualizados.");
     }
 
+    // --- NUEVA LÓGICA DE PEDIDOS AGRUPADOS ---
     function escucharPedidos() {
-        db.collection("pedidos").orderBy("timestamp", "desc").onSnapshot(snap => {
+        db.collection("pedidos").orderBy("timestamp", "asc").onSnapshot(snap => {
             const cont = document.getElementById('listaPedidos');
             cont.innerHTML = "";
+
+            if (snap.empty) {
+                cont.innerHTML = "No hay pedidos en el historial.";
+                return;
+            }
+
+            // Agrupar pedidos por repartidor
+            const grupos = {};
             snap.forEach(doc => {
                 const p = doc.data();
-                let fechaHora = p.timestamp ? p.timestamp.toDate().toLocaleString('es-NI', { dateStyle: 'medium', timeStyle: 'short' }) : "---";
-                cont.innerHTML += `
-                    <div class="card pedido-card">
-                        <span class="fecha-orden">🕒 ${fechaHora}</span>
-                        <b style="color: var(--naranja); font-size: 1.1em;">👤 ${p.cliente || 'Sin nombre'}</b><br>
-                        <hr style="border:0; border-top:1px dashed #ddd; margin: 8px 0;">
-                        <b>🏷️ Servicio:</b> ${p.tipo || 'N/A'}<br>
-                        <b>📝 Detalle:</b> ${p.detalle || 'Sin descripción'}<br>
-                        <b>📍 Ubicación:</b> ${p.ubicacion || 'No especificada'}<br>
-                        ${p.repartidorAsignado ? `<b>🚴 Asignado a:</b> ${p.repartidorAsignado}<br>` : ''}
-                        <br>
-                        <button class="btn-borrar" onclick="eliminarPedido('${doc.id}')">Eliminar del Historial</button>
-                    </div>`;
+                const rep = p.repartidorAsignado || "Sin Asignar";
+                if (!grupos[rep]) grupos[rep] = [];
+                grupos[rep].push({ id: doc.id, ...p });
             });
+
+            // Generar el HTML de los grupos
+            for (const repartidor in grupos) {
+                const pedidosRep = grupos[repartidor];
+                const idGrupo = `grupo_${repartidor.replace(/\s+/g, '_')}`;
+                
+                let htmlGrupo = `
+                    <div class="repartidor-group">
+                        <div class="repartidor-header" onclick="toggleGrupo('${idGrupo}')">
+                            <span>🚴 ${repartidor}</span>
+                            <span class="badge-cuenta">${pedidosRep.length}</span>
+                        </div>
+                        <div id="${idGrupo}" class="pedidos-container">`;
+
+                pedidosRep.forEach((p, index) => {
+                    let fechaHora = p.timestamp ? p.timestamp.toDate().toLocaleString('es-NI', { dateStyle: 'medium', timeStyle: 'short' }) : "---";
+                    htmlGrupo += `
+                        <div class="card pedido-card">
+                            <span class="num-pedido">#${index + 1}</span>
+                            <span class="fecha-orden">🕒 ${fechaHora}</span>
+                            <b style="color: var(--naranja); font-size: 1.1em;">👤 ${p.cliente || 'Sin nombre'}</b><br>
+                            <hr style="border:0; border-top:1px dashed #ddd; margin: 8px 0;">
+                            <b>🏷️ Servicio:</b> ${p.tipo || 'N/A'}<br>
+                            <b>📝 Detalle:</b> ${p.detalle || 'Sin descripción'}<br>
+                            <b>📍 Ubicación:</b> ${p.ubicacion || 'No especificada'}<br>
+                            <br>
+                            <button class="btn-borrar" onclick="eliminarPedido('${p.id}')">Eliminar del Historial</button>
+                        </div>`;
+                });
+
+                htmlGrupo += `</div></div>`;
+                cont.innerHTML += htmlGrupo;
+            }
         });
+    }
+
+    function toggleGrupo(id) {
+        const el = document.getElementById(id);
+        const isVisible = el.style.display === "block";
+        // Cerrar todos primero (opcional, si quieres que solo uno esté abierto a la vez)
+        // document.querySelectorAll('.pedidos-container').forEach(c => c.style.display = "none");
+        el.style.display = isVisible ? "none" : "block";
     }
 
     async function eliminarPedido(id) { 
