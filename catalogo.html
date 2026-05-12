@@ -78,7 +78,19 @@
 
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column; padding: 10px; box-sizing: border-box; }
         
-        .modal-contenido { width: 100%; max-width: 100vw; max-height: 85vh; border-radius: 10px; object-fit: contain; animation: zoomIn 0.3s forwards; }
+        .modal-contenido {
+            margin: auto;
+            display: block;
+            max-width: 90vw;
+            max-height: 85vh;
+            width: auto;
+            height: auto;
+            border-radius: 10px;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: high-quality;
+            touch-action: none;
+            transform-origin: center center;
+        }
         #caption { color: white; margin-top: 15px; font-weight: 600; font-size: 1.4em; text-align: center; padding: 0 20px; }
         
         .cerrar-modal { position: absolute; top: 20px; right: 20px; color: white; font-size: 45px; font-weight: bold; cursor: pointer; background: rgba(50,50,50,0.6); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; z-index: 2001; line-height: 1; }
@@ -120,7 +132,7 @@
 
 <button id="btnIrAPedidos" class="btn-hacer-pedido" onclick="abrirCarrito()">🛒 VER MI PEDIDO</button>
 
-<div id="miModal" class="modal" onclick="this.style.display='none'">
+<div id="miModal" class="modal" onclick="cerrarModalImagen()">
     <span class="cerrar-modal">&times;</span>
     <img class="modal-contenido" id="imgGrande" onclick="event.stopPropagation()">
     <div id="caption"></div>
@@ -138,30 +150,35 @@
     </div>
 </div>
 <script>
-    const config = { 
-        apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
-        authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
-        projectId: "antojitos-pueblo-nuevo", 
-        storageBucket: "antojitos-pueblo-nuevo.appspot.com", 
-        messagingSenderId: "1006413360329", 
-        appId: "1:1006413360329:web:99103e89833729cc2e3118" 
+    const config = {
+        apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao",
+        authDomain: "antojitos-pueblo-nuevo.firebaseapp.com",
+        projectId: "antojitos-pueblo-nuevo",
+        storageBucket: "antojitos-pueblo-nuevo.appspot.com",
+        messagingSenderId: "1006413360329",
+        appId: "1:1006413360329:web:99103e89833729cc2e3118"
     };
     firebase.initializeApp(config);
     const db = firebase.firestore();
-    
+
     let catAct = "todo";
     let todosLosProductos = [];
-    let mapaLocales = {}; 
+    let mapaLocales = {};
     let linkDestinoPedido = "#";
-    
+
     let carrito = [];
 
-    window.onload = () => { 
-        cargarConfig(); 
-        cargarCats(); 
-        cargarLocales(); 
-        cargarTodosLosProductos(); 
-        recuperarCarrito(); 
+    // Variables para el zoom
+    let scale = 1;
+    let imgElement = null;
+
+    window.onload = () => {
+        cargarConfig();
+        cargarCats();
+        cargarLocales();
+        cargarTodosLosProductos();
+        recuperarCarrito();
+        initZoomListeners();
     };
 
     function selVariante(elem, prodId, variante) {
@@ -171,45 +188,41 @@
         document.getElementById(`prod-item-${prodId}`).setAttribute('data-variante', variante);
     }
 
-    // --- FUNCIÓN EDITADA CON CANDADO ANTI-SPAM ---
     function agregarAlCarrito(prodId, nombreProd, localId) {
         let itemDiv = document.getElementById(`prod-item-${prodId}`);
         let btn = itemDiv.querySelector('.btn-add');
 
-        // Si el botón ya está en proceso de agregado, ignoramos el click
         if (btn.disabled) return;
 
-        // Bloqueamos el botón inmediatamente
         btn.disabled = true;
 
         let variante = itemDiv.getAttribute('data-variante');
         let nombreLocal = mapaLocales[localId] || "Local asociado";
-        
-        let item = { 
-            id: prodId, 
-            nombre: nombreProd, 
-            local: nombreLocal, 
-            variante: variante 
+
+        let item = {
+            id: prodId,
+            nombre: nombreProd,
+            local: nombreLocal,
+            variante: variante
         };
-        
+
         carrito.push(item);
         actualizarBadge();
-        
+
         let originalText = btn.innerHTML;
         btn.innerHTML = "✔";
         btn.style.background = "#27ae60";
 
-        // Después de 500ms, restauramos el botón y permitimos otro click
-        setTimeout(() => { 
-            btn.innerHTML = originalText; 
-            btn.style.background = "var(--verde)"; 
-            btn.disabled = false; // Aquí liberamos el candado
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = "var(--verde)";
+            btn.disabled = false;
         }, 500);
     }
 
     function actualizarBadge() {
         document.getElementById('cartCount').innerText = carrito.length;
-        localStorage.setItem('carritoTemporal', JSON.stringify(carrito)); 
+        localStorage.setItem('carritoTemporal', JSON.stringify(carrito));
     }
 
     function recuperarCarrito() {
@@ -221,16 +234,16 @@
         const modal = document.getElementById('modalCarrito');
         const lista = document.getElementById('contenidoListaCarrito');
         lista.innerHTML = "";
-        
+
         if(carrito.length === 0) {
             lista.innerHTML = "<p style='text-align:center; color:gray;'>Aún no has agregado nada.</p>";
         } else {
             carrito.forEach((item, index) => {
-                let txtVariante = item.variante ? `<br><small style="color:#e67e22;">▸ ${item.variante}</small>` : "";
+                let txtVariante = item.variante? `<br><small style="color:#e67e22;">▸ ${item.variante}</small>` : "";
                 lista.innerHTML += `
                 <div class="cart-item">
                     <div style="line-height: 1.2;">
-                        📦 ${item.nombre} 
+                        📦 ${item.nombre}
                         ${txtVariante}
                     </div>
                     <button class="btn-eliminar" onclick="eliminarDelCarrito(${index})">X</button>
@@ -245,7 +258,7 @@
     function eliminarDelCarrito(index) {
         carrito.splice(index, 1);
         actualizarBadge();
-        abrirCarrito(); 
+        abrirCarrito();
     }
 
     function confirmarYEnviar() {
@@ -255,13 +268,86 @@
         window.location.href = linkDestinoPedido;
     }
 
-    function abrirImagen(url, nombre) {
+    function abrirImagen(urlHD, nombre) {
         const modal = document.getElementById("miModal");
-        const img = document.getElementById("imgGrande");
+        imgElement = document.getElementById("imgGrande");
         const cap = document.getElementById("caption");
         modal.style.display = "flex";
-        img.src = url;
+        resetZoom();
+        imgElement.src = urlHD;
         cap.innerText = nombre;
+    }
+
+    function cerrarModalImagen() {
+        document.getElementById("miModal").style.display = 'none';
+        resetZoom();
+    }
+
+    // --- ZOOM FIJO: SIN ARRASTRE, SOLO PELLIZCO Y DOBLE TAP ---
+    function initZoomListeners() {
+        imgElement = document.getElementById("imgGrande");
+
+        // Doble tap para zoom
+        let lastTap = 0;
+        imgElement.addEventListener('touchend', function(e) {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 300 && tapLength > 0) {
+                e.preventDefault();
+                if (scale === 1) {
+                    scale = 2.5;
+                } else {
+                    scale = 1;
+                }
+                updateTransform();
+            }
+            lastTap = currentTime;
+        });
+
+        // Solo pellizco para zoom, sin arrastre
+        imgElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+        imgElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+        imgElement.addEventListener('touchend', handleTouchEnd);
+    }
+
+    function handleTouchStart(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            imgElement.startDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            imgElement.lastScale = scale;
+        }
+    }
+
+    function handleTouchMove(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const dist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            if (!imgElement.startDist) return;
+            scale = Math.min(Math.max(1, imgElement.lastScale * (dist / imgElement.startDist)), 4);
+            updateTransform();
+        }
+    }
+
+    function handleTouchEnd(e) {
+        if (e.touches.length < 2) {
+            imgElement.startDist = null;
+            if (scale < 1.1) resetZoom();
+        }
+    }
+
+    function updateTransform() {
+        imgElement.style.transform = `scale(${scale})`;
+    }
+
+    function resetZoom() {
+        scale = 1;
+        if(imgElement) imgElement.style.transform = 'scale(1)';
     }
 
     function cargarConfig() {
@@ -289,7 +375,7 @@
         catAct = id;
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         b.classList.add('active');
-        document.getElementById('buscador').value = ""; 
+        document.getElementById('buscador').value = "";
         document.getElementById('resultadosBusqueda').style.display = "none";
         document.getElementById('listaLocales').style.display = "block";
         document.getElementById('contenedorTabs').style.display = "block";
@@ -298,13 +384,13 @@
 
     function cargarLocales() {
         let q = db.collection("locales");
-        if(catAct !== "todo") q = q.where("categoriaId", "==", catAct);
+        if(catAct!== "todo") q = q.where("categoriaId", "==", catAct);
         q.onSnapshot(snap => {
             const container = document.getElementById('listaLocales');
             container.innerHTML = "";
             snap.forEach(doc => {
                 const l = doc.data();
-                mapaLocales[doc.id] = l.nombre; 
+                mapaLocales[doc.id] = l.nombre;
                 container.innerHTML += `
                 <div class="local-card" id="card-${doc.id}">
                     <div class="local-header" onclick="toggleAcc('${doc.id}')">
@@ -322,10 +408,10 @@
         const box = document.getElementById(`prod-${id}`);
         const abierto = c.classList.contains('open');
         document.querySelectorAll('.local-card').forEach(card => card.classList.remove('open'));
-        if(!abierto) { 
-            c.classList.add('open'); 
+        if(!abierto) {
+            c.classList.add('open');
             box.innerHTML = `<div class="msg-cargando">⏳ Cargando menú...</div>`;
-            cargarProds(id); 
+            cargarProds(id);
         }
     }
 
@@ -348,15 +434,14 @@
     function normalizarTexto(texto) {
         if (!texto) return "";
         return texto.toLowerCase()
-            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") 
-            .replace(/ll/g, "y")  
-            .replace(/i/g, "y")   
-            .replace(/v/g, "b")   
-            .replace(/z|c/g, "s") 
-            .replace(/h/g, "");   
+       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+       .replace(/ll/g, "y")
+       .replace(/i/g, "y")
+       .replace(/v/g, "b")
+       .replace(/z|c/g, "s")
+       .replace(/h/g, "");
     }
 
-    // --- BÚSQUEDA SÚPER INTELIGENTE INTEGRADA ---
     function buscarProducto() {
         const query = document.getElementById('buscador').value;
         const mainLista = document.getElementById('listaLocales');
@@ -380,15 +465,13 @@
         const productosFiltrados = todosLosProductos.filter(p => {
             const nombreNorm = normalizarTexto(p.nombre);
             const descNorm = normalizarTexto(p.descripcion || "");
-            
-            // 1. Coincidencia directa (rápida)
+
             if (nombreNorm.includes(queryNormalizada) || descNorm.includes(queryNormalizada)) return true;
-            
-            // 2. Coincidencia difusa (para errores de dedo)
+
             const palabrasNombre = nombreNorm.split(" ");
             return palabrasNombre.some(palabra => {
                 const similitud = calcularSimilitud(palabra, queryNormalizada);
-                return similitud > 0.65; // Tolerancia ajustable (0.65 = 65% de parecido)
+                return similitud > 0.65;
             });
         });
 
@@ -400,10 +483,9 @@
         productosFiltrados.forEach(p => renderizarProductoHTML(p, p.id, resultadosDiv, true));
     }
 
-    // Funciones auxiliares para la búsqueda inteligente
     function calcularSimilitud(s1, s2) {
-        let larga = s1.length < s2.length ? s2 : s1;
-        let corta = s1.length < s2.length ? s1 : s2;
+        let larga = s1.length < s2.length? s2 : s1;
+        let corta = s1.length < s2.length? s1 : s2;
         if (larga.length === 0) return 1.0;
         return (larga.length - distanciaEdicion(larga, corta)) / parseFloat(larga.length);
     }
@@ -416,9 +498,8 @@
                 if (i == 0) costos[j] = j;
                 else if (j > 0) {
                     let nuevoValor = costos[j - 1];
-                    if (s1.charAt(i - 1) != s2.charAt(j - j + j - 1 + 1 - 1)) // ajuste de comparación
-                        if (s1.charAt(i-1) !== s2.charAt(j-1))
-                            nuevoValor = Math.min(Math.min(nuevoValor, ultimoValor), costos[j]) + 1;
+                    if (s1.charAt(i-1)!== s2.charAt(j-1))
+                        nuevoValor = Math.min(Math.min(nuevoValor, ultimoValor), costos[j]) + 1;
                     costos[j - 1] = ultimoValor;
                     ultimoValor = nuevoValor;
                 }
@@ -431,13 +512,13 @@
     function renderizarProductoHTML(p, prodId, contenedor, esBusqueda) {
         let chips = "";
         let variantePorDefecto = "";
-        
+
         if(p.variantes){
             let arrVar = p.variantes.split("-");
-            if(arrVar.length > 0) variantePorDefecto = arrVar[0].trim(); 
-            
+            if(arrVar.length > 0) variantePorDefecto = arrVar[0].trim();
+
             chips = '<div class="variantes-titulo">Marcas/Opciones:</div><div class="contenedor-chips">';
-            arrVar.forEach((v, index) => { 
+            arrVar.forEach((v, index) => {
                 let val = v.trim();
                 if(val) {
                     chips += `<div class="chip ${index===0?'selected':''}" onclick="selVariante(this, '${prodId}', '${val}')">${val}</div>`;
@@ -452,6 +533,9 @@
             etiquetaLocal = `<span class="badge-local">📍 De: ${nombreDelLocal}</span>`;
         }
 
+        const urlMiniatura = p.urlImagen || '';
+        const urlParaModal = p.urlImagenHD || p.urlImagen || '';
+
         contenedor.innerHTML += `
         <div class="producto-item" id="prod-item-${prodId}" data-variante="${variantePorDefecto}">
             ${etiquetaLocal}
@@ -462,11 +546,11 @@
             <div><span class="prod-precio">${p.precio}</span></div>
             <div class="prod-cuerpo">
                 <div style="flex:1">
-                    ${p.descripcion ? `<div class="prod-desc">${p.descripcion}</div>` : ''}
+                    ${p.descripcion? `<div class="prod-desc">${p.descripcion}</div>` : ''}
                     ${chips}
                 </div>
-                ${p.urlImagen ? `<img src="${p.urlImagen}" class="prod-foto-mini" alt="${p.nombre}" onclick="abrirImagen('${p.urlImagen}', '${p.nombre}')">` : ''}
+                ${urlMiniatura? `<img src="${urlMiniatura}" class="prod-foto-mini" alt="${p.nombre}" onclick="abrirImagen('${urlParaModal}', '${p.nombre}')">` : ''}
             </div>
         </div>`;
     }
-            </script>    
+</script>
