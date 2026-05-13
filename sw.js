@@ -1,4 +1,4 @@
-const CACHE_NAME = 'antojitos-cache-v21';
+const CACHE_NAME = 'antojitos-cache-v22';
 const urlsToCache = ['/', 'index.html'];
 
 self.addEventListener('install', event => {
