@@ -1,4 +1,4 @@
-const CACHE_NAME = 'antojitos-cache-v24';
+const CACHE_NAME = 'antojitos-cache-v25';
 const urlsToCache = [
   './',
   './index.html',
