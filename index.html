@@ -173,7 +173,7 @@
         </div>
     </div>
 </div>
-    <script>
+<script>
     const config = {
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao",
         authDomain: "antojitos-pueblo-nuevo.firebaseapp.com",
@@ -400,7 +400,7 @@
         }
         modal.style.display = 'flex';
     }
-            function cerrarCarrito() { 
+    function cerrarCarrito() { 
         document.getElementById('modalCarrito').style.display = 'none'; 
     }
 
@@ -477,13 +477,9 @@
             return;
         }
 
-        // Selección inteligente: busca el trabajador con el 'ultimoContacto' más antiguo (menor valor)
-        trabajadorTemp = servicio.telefonos.reduce((prev, curr) => {
-            const prevTime = prev.ultimoContacto || 0;
-            const currTime = curr.ultimoContacto || 0;
-            return (prevTime < currTime) ? prev : curr;
-        });
-        
+        // Selecciona aleatoriamente a uno de los trabajadores registrados para ir rotándolos
+        const randomIndex = Math.floor(Math.random() * servicio.telefonos.length);
+        trabajadorTemp = servicio.telefonos[randomIndex];
         servicioTemp = servicio;
 
         document.getElementById('modalServicio').style.display = 'flex';
@@ -505,18 +501,7 @@
             fecha: firebase.firestore.FieldValue.serverTimestamp()
         }).catch(err => console.error("Error guardando historial:", err));
 
-        // 2. Actualizar tiempo en Firebase para rotación justa
-        const refServicio = db.collection("productos").doc(serv.id);
-        const ahora = Date.now();
-        const nuevosTelefonos = serv.telefonos.map(t => {
-            if(t.telefono === trab.telefono) {
-                return { ...t, ultimoContacto: ahora };
-            }
-            return t;
-        });
-        refServicio.update({ telefonos: nuevosTelefonos });
-
-        // 3. Preparar WhatsApp y redirigir (Compatible con iPhone)
+        // 2. Preparar WhatsApp y redirigir (Compatible con iPhone)
         let numTel = trab.telefono.replace(/\D/g,''); 
         if (numTel.length === 8) numTel = "505" + numTel; // Asume Nicaragua si solo pones 8 números
 
@@ -822,4 +807,3 @@
         </div>`;
     }
 </script>
-    
