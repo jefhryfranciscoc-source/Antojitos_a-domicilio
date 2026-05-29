@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo - Antojitos Pueblo Nuevo</title>
-    <link rel="manifest" href="./manifest.json">
+    <link rel="manifest" href=" ./manifest.json">
     <meta name="theme-color" content="#e67e22">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -19,6 +19,9 @@
             --gris-elegante: #fcfc;
             --gris-borde: #e0e0e0;
             --gris-producto: #95a5a6; 
+            /* Nuevos colores para servicios */
+            --azul-servicio: #3498db;
+            --azul-claro: #eaf2f8;
         }
         
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #fdfdfd; margin: 0; padding: 10px; padding-bottom: 120px; color: var(--oscuro); overflow-x: hidden; }
@@ -58,6 +61,11 @@
         .prod-superior { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
         .prod-info-base b { color: #000; font-size: 1.25em; display: block; font-weight: 800; }
         
+        /* ESTILOS NUEVOS PARA SERVICIOS */
+        .servicio-card { border-left: 8px solid var(--azul-servicio) !important; border-radius: 18px; }
+        .servicio-card .prod-desc { background: var(--azul-claro) !important; border-left-color: var(--azul-servicio) !important; color: #2980b9 !important; font-weight: 600; }
+        .btn-servicio { background: var(--azul-servicio) !important; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3) !important; width: 100% !important; margin-bottom: 10px; }
+        
         .prod-precio { background: var(--naranja); color: #fff; font-weight: 900; font-size: 1.1em; padding: 8px 14px; border-radius: 12px; box-shadow: 0 4px 10px rgba(230, 126, 34, 0.25); white-space: nowrap; margin-bottom: 10px; display: inline-block; }
         
         .btn-add { background: var(--verde); color: white; border: none; border-radius: 12px; width: auto; height: 45px; font-size: 0.95em; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); transition: all 0.2s; flex-shrink: 0; padding: 0 16px; }
@@ -75,121 +83,26 @@
         .prod-foto-mini { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 1px solid #eee; flex-shrink: 0; cursor: pointer; transition: transform 0.2s; -webkit-tap-highlight-color: transparent; }
         .prod-foto-mini:active { transform: scale(0.95); }
 
-        .grupo-local-carrito {
-            background: #fdfdfd;
-            border: 1.5px solid #f0f0f0;
-            border-radius: 15px;
-            padding: 12px;
-            margin-bottom: 20px;
-        }
-        .local-titulo-carrito {
-            font-size: 0.95em;
-            font-weight: 800;
-            color: var(--naranja);
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .detalles-pedido-area {
-            width: 100%;
-            border: 2px solid #ccc;
-            border-radius: 12px;
-            padding: 12px;
-            font-family: inherit;
-            font-size: 1.05em;
-            color: #000;
-            resize: none;
-            margin-top: 10px;
-            background: #fff;
-            box-sizing: border-box;
-            outline: none;
-            transition: all 0.2s;
-        }
-        .detalles-pedido-area:focus {
-            border-color: var(--naranja);
-            box-shadow: 0 0 8px rgba(230, 126, 34, 0.2);
-        }
+        .grupo-local-carrito { background: #fdfdfd; border: 1.5px solid #f0f0f0; border-radius: 15px; padding: 12px; margin-bottom: 20px; }
+        .local-titulo-carrito { font-size: 0.95em; font-weight: 800; color: var(--naranja); margin-bottom: 10px; display: flex; align-items: center; gap: 5px; }
+        .detalles-pedido-area { width: 100%; border: 2px solid #ccc; border-radius: 12px; padding: 12px; font-family: inherit; font-size: 1.05em; color: #000; resize: none; margin-top: 10px; background: #fff; box-sizing: border-box; outline: none; transition: all 0.2s; }
+        .detalles-pedido-area:focus { border-color: var(--naranja); box-shadow: 0 0 8px rgba(230, 126, 34, 0.2); }
+        .detalles-pedido-area::placeholder { color: #2d3436 !important; font-weight: 700 !important; font-size: 0.95em; opacity: 1; font-style: normal; }
 
-        .detalles-pedido-area::placeholder {
-            color: #2d3436 !important;
-            font-weight: 700 !important;
-            font-size: 0.95em;
-            opacity: 1;
-            font-style: normal;
-        }
-
-        .variantes-titulo {
-            font-size: 0.8em;
-            color: #5d4037;
-            font-weight: 800;
-            margin: 14px 0 8px 5px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .variantes-titulo strong {
-            color: var(--naranja);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .variantes-titulo .hint {
-            font-size: 0.9em;
-            font-weight: 600;
-            color: var(--texto-suave);
-            font-style: italic;
-        }
+        .variantes-titulo { font-size: 0.8em; color: #5d4037; font-weight: 800; margin: 14px 0 8px 5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .variantes-titulo strong { color: var(--naranja); text-transform: uppercase; letter-spacing: 0.5px; }
         .contenedor-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-        .chip {
-            background: #fff;
-            border: 2px solid #dfe6e9;
-            border-radius: 12px;
-            padding: 10px 16px;
-            font-size: 0.95em;
-            color: #2d3436;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-        }
-        .chip.selected {
-            background: var(--naranja);
-            color: white;
-            border-color: var(--naranja);
-            box-shadow: 0 6px 16px rgba(230, 126, 34, 0.5);
-            transform: scale(1.08);
-            font-weight: 900;
-            padding-left: 35px;
-        }
-        .chip.selected::before {
-            content: '✔';
-            position: absolute;
-            left: 12px;
-            font-size: 1.1em;
-        }
+        .chip { background: #fff; border: 2px solid #dfe6e9; border-radius: 12px; padding: 10px 16px; font-size: 0.95em; color: #2d3436; font-weight: 700; cursor: pointer; transition: all 0.2s; position: relative; }
+        .chip.selected { background: var(--naranja); color: white; border-color: var(--naranja); box-shadow: 0 6px 16px rgba(230, 126, 34, 0.5); transform: scale(1.08); font-weight: 900; padding-left: 35px; }
+        .chip.selected::before { content: '✔'; position: absolute; left: 12px; font-size: 1.1em; }
 
         .msg-cargando { text-align: center; padding: 20px; color: var(--texto-suave); font-style: italic; }
         
         .btn-hacer-pedido { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 400px; background: var(--verde); color: white; text-align: center; padding: 18px; border-radius: 18px; font-weight: 900; font-size: 1.2em; z-index: 90; box-shadow: 0 8px 20px rgba(46, 204, 113, 0.3); cursor: pointer; border: none; }
 
         .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.95); align-items: center; justify-content: center; flex-direction: column; padding: 10px; box-sizing: border-box; }
-        
-        .modal-contenido {
-            margin: auto;
-            display: block;
-            max-width: 90vw;
-            max-height: 85vh;
-            width: auto;
-            height: auto;
-            border-radius: 10px;
-            image-rendering: -webkit-optimize-contrast;
-            image-rendering: high-quality;
-            touch-action: none;
-            transform-origin: center;
-        }
+        .modal-contenido { margin: auto; display: block; max-width: 90vw; max-height: 85vh; width: auto; height: auto; border-radius: 10px; touch-action: none; transform-origin: center; }
         #caption { color: white; margin-top: 15px; font-weight: 600; font-size: 1.4em; text-align: center; padding: 0 20px; }
-        
         .cerrar-modal { position: absolute; top: 20px; right: 20px; color: white; font-size: 45px; font-weight: bold; cursor: pointer; background: rgba(50,50,50,0.6); border-radius: 50%; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; z-index: 2001; line-height: 1; }
         
         .modal-caja-blanca { background: white; width: 95%; max-width: 420px; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; max-height: 90vh; animation: zoomIn 0.3s forwards; }
@@ -246,6 +159,20 @@
         </div>
     </div>
 </div>
+
+<div id="modalServicio" class="modal" style="background-color: rgba(0,0,0,0.8);">
+    <div class="modal-caja-blanca" style="max-width: 350px;">
+        <h3 style="color: var(--azul-servicio); border-bottom-color: var(--azul-claro);">🛠️ Solicitar Servicio</h3>
+        <div style="text-align: center; padding: 10px;">
+            <p style="font-size: 1.1em; color: #333; line-height: 1.5; font-weight: 500;">
+                ¿Quieres solicitar este servicio de empleo?<br><br>
+                Comunícate con uno de los que presentan este servicio y dile que lo quieres solicitar para arreglar las cosas con él.
+            </p>
+            <button id="btnConfirmarServicio" class="btn-confirmar" style="width: 100%; background: var(--azul-servicio); margin-top: 15px; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);">Continuar a WhatsApp</button>
+            <button class="btn-seguir" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('modalServicio').style.display='none'">Cancelar</button>
+        </div>
+    </div>
+</div>
 <script>
     const config = {
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao",
@@ -261,12 +188,12 @@
     let catAct = "todo";
     let todosLosProductos = [];
     let mapaLocales = {};
+    let mapaServicios = {}; // Nuevo mapa para guardar los datos de los servicios temporalmente
     let linkDestinoPedido = "#";
 
     let carrito = [];
-    let notasPorLocal = {}; // Objeto para guardar lo que escribas en cada local
+    let notasPorLocal = {}; 
 
-    // Variables para el zoom
     let scale = 1;
     let imgElement = null;
 
@@ -279,7 +206,6 @@
         initZoomListeners();
     };
 
-    // --- NUEVA LÓGICA DE BOTÓN INTELIGENTE ---
     function manejadorBotonPrincipal() {
         if (carrito.length > 0) {
             abrirCarrito();
@@ -409,7 +335,6 @@
         }
     }
 
-    // Nueva función para capturar el texto del local
     function guardarNota(localNombre, valor) {
         notasPorLocal[localNombre] = valor;
     }
@@ -424,21 +349,18 @@
         } else {
             let totalGeneral = 0;
             
-            // 1. Agrupar productos por Local
             const grupos = carrito.reduce((acc, item) => {
                 if (!acc[item.local]) acc[item.local] = [];
                 acc[item.local].push(item);
                 return acc;
             }, {});
 
-            // 2. Renderizar cada grupo
             for (const local in grupos) {
                 let htmlGrupo = `<div class="grupo-local-carrito">
                     <div class="local-titulo-carrito">📍 ${local}</div>`;
                 
                 grupos[local].forEach((item) => {
                     totalGeneral += item.precio || 0;
-                    // Buscamos el índice real en el array original para eliminarlo correctamente
                     const realIndex = carrito.indexOf(item);
                     
                     let txtVariante = item.variante? `<br><small style="color:#e67e22;">▸ ${item.variante}</small>` : "";
@@ -455,7 +377,6 @@
                     </div>`;
                 });
 
-                // 3. Agregar el Textarea de detalles para este local
                 const notaActual = notasPorLocal[local] || "";
                 htmlGrupo += `
                     <textarea class="detalles-pedido-area" 
@@ -489,7 +410,6 @@
         abrirCarrito();
     }
 
-    // --- FUNCIÓN CON LINK CORREGIDO ---
     function confirmarYEnviar() {
         if(carrito.length === 0) return; 
 
@@ -521,27 +441,21 @@
 
         const mensajeFinal = encodeURIComponent(textoWhatsApp);
         
-        // CORRECCIÓN DEL LINK:
-        // Limpiamos el link de Firebase de cualquier parámetro previo y aseguramos el formato correcto
         let baseWA = linkDestinoPedido.split('?')[0]; 
         if (baseWA.includes("wa.me/")) {
             baseWA = baseWA.replace("wa.me/", "api.whatsapp.com/send?phone=");
         }
         
-        // Verificamos si ya tiene el signo '?' para saber qué conector usar
         const conector = baseWA.includes("?") ? "&" : "?";
         const linkCompleto = `${baseWA}${conector}text=${mensajeFinal}`;
 
-        // --- SOLUCIÓN: ATRAPAMOS LA DESCRIPCIÓN PARA LA PÁGINA DE PEDIDOS ---
         let notasAsignadas = {};
         carrito.forEach(item => {
             if (typeof notasPorLocal !== 'undefined' && notasPorLocal[item.local] && !notasAsignadas[item.local]) {
-                // Guardamos la nota dentro del producto para que el cerebro de la app la pueda leer
                 item.notas = notasPorLocal[item.local].trim();
-                notasAsignadas[item.local] = true; // Evitamos que la misma nota se repita por cada producto del local
+                notasAsignadas[item.local] = true; 
             }
         });
-        // --------------------------------------------------------------------
 
         localStorage.setItem('carritoConfirmado', JSON.stringify(carrito));
         carrito = [];
@@ -550,6 +464,53 @@
         actualizarBadge(); 
         
         window.location.href = linkCompleto;
+    }
+
+    // --- NUEVAS FUNCIONES PARA SERVICIOS ---
+    let servicioTemp = null;
+    let trabajadorTemp = null;
+
+    function prepararServicio(prodId) {
+        const servicio = mapaServicios[prodId];
+        if (!servicio || !servicio.telefonos || servicio.telefonos.length === 0) {
+            alert("No hay trabajadores registrados para este servicio por el momento.");
+            return;
+        }
+
+        // Selecciona aleatoriamente a uno de los trabajadores registrados para ir rotándolos
+        const randomIndex = Math.floor(Math.random() * servicio.telefonos.length);
+        trabajadorTemp = servicio.telefonos[randomIndex];
+        servicioTemp = servicio;
+
+        document.getElementById('modalServicio').style.display = 'flex';
+        
+        document.getElementById('btnConfirmarServicio').onclick = function() {
+            enviarSolicitudServicio();
+        };
+    }
+
+    function enviarSolicitudServicio() {
+        const serv = servicioTemp;
+        const trab = trabajadorTemp;
+        
+        // 1. Guardar en el historial de Firebase (Para que lo veas en el Panel Admin)
+        db.collection("historial_servicios").add({
+            nombreServicio: serv.nombre,
+            trabajadorNombre: trab.nombre,
+            trabajadorTelefono: trab.telefono,
+            fecha: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(err => console.error("Error guardando historial:", err));
+
+        // 2. Preparar WhatsApp y redirigir (Compatible con iPhone)
+        let numTel = trab.telefono.replace(/\D/g,''); 
+        if (numTel.length === 8) numTel = "505" + numTel; // Asume Nicaragua si solo pones 8 números
+
+        let mensaje = `¡Hola ${trab.nombre}! Te escribo desde el Catálogo Antojitos Pueblo Nuevo.\n\nMe interesa solicitar tu servicio de: *${serv.nombre}*.\n\n¿Me podrías dar más información sobre disponibilidad y precios?`;
+        
+        let linkWA = `https://wa.me/${numTel}?text=${encodeURIComponent(mensaje)}`;
+        
+        document.getElementById('modalServicio').style.display = 'none';
+        window.open(linkWA, '_blank');
     }
 
     function abrirImagen(urlHD, nombre) {
@@ -777,11 +738,15 @@
         return costos[s2.length];
     }
 
+    // --- RENDERIZADO ADAPTADO PARA SERVICIOS ---
     function renderizarProductoHTML(p, prodId, contenedor, esBusqueda) {
+        const esServicio = p.tipoItem === 'servicio';
+        if(esServicio) mapaServicios[prodId] = p;
+
         let chips = "";
         let tieneVariantes = false;
 
-        if(p.variantes){
+        if(!esServicio && p.variantes){
             tieneVariantes = true;
             let arrVar = p.variantes.split("-");
             chips = '<div class="variantes-titulo"><strong>ELIGE UNA OPCIÓN</strong></div><div class="contenedor-chips">';
@@ -801,20 +766,40 @@
         const urlMiniatura = p.urlImagen || '';
         const urlParaModal = p.urlImagenHD || p.urlImagen || '';
 
-        let btnStyle = tieneVariantes? 'opacity: 0.6; cursor: not-allowed; background: #9ccc65; filter: saturate(0.4);' : '';
-        let btnDisabled = tieneVariantes? 'disabled' : '';
+        const iconoItem = esServicio ? '🛠️' : '📦';
+        const iconoDesc = esServicio ? '💼' : '🍴';
+        const claseCard = esServicio ? 'servicio-card' : '';
+        
+        let descHtml = '';
+        if (p.descripcion) {
+            if (esServicio) {
+                descHtml = `<div class="prod-desc" style="margin-top: 8px;">${iconoDesc} ${p.descripcion}</div>`;
+            } else {
+                descHtml = `<div class="prod-desc" style="margin-top: 8px; background: var(--naranja-claro); border-left: 4px solid var(--naranja); font-weight: 600; color: #5d4037;">${iconoDesc} ${p.descripcion}</div>`;
+            }
+        }
 
-        contenedor.innerHTML += `
-        <div class="producto-item" id="prod-item-${prodId}" data-variante="" data-precio-base="${p.precio}" data-precio-seleccionado="" data-tiene-variantes="${tieneVariantes}">
-            ${etiquetaLocal}
-            <div class="prod-info-base" style="margin-bottom: 8px;">
-                <b>📦 ${p.nombre}</b>
-                ${p.descripcion? `<div class="prod-desc" style="margin-top: 8px; background: var(--naranja-claro); border-left: 4px solid var(--naranja); font-weight: 600; color: #5d4037;">🍴 ${p.descripcion}</div>` : ''}
-            </div>
+        let accionHtml = '';
+        if (esServicio) {
+            accionHtml = `<button class="btn-add btn-servicio" onclick="prepararServicio('${prodId}')">Solicitar este servicio</button>`;
+        } else {
+            let btnStyle = tieneVariantes? 'opacity: 0.6; cursor: not-allowed; background: #9ccc65; filter: saturate(0.4);' : '';
+            let btnDisabled = tieneVariantes? 'disabled' : '';
+            accionHtml = `
             <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
                 <span class="prod-precio" style="flex-shrink: 0;">${p.precio}</span>
                 <button class="btn-add" style="flex: 1; ${btnStyle}" ${btnDisabled} onclick="agregarAlCarrito('${prodId}', '${p.nombre}', '${p.localId}')">Agregar al pedido</button>
+            </div>`;
+        }
+
+        contenedor.innerHTML += `
+        <div class="producto-item ${claseCard}" id="prod-item-${prodId}" data-variante="" data-precio-base="${p.precio||''}" data-precio-seleccionado="" data-tiene-variantes="${tieneVariantes}">
+            ${etiquetaLocal}
+            <div class="prod-info-base" style="margin-bottom: 8px;">
+                <b>${iconoItem} ${p.nombre}</b>
+                ${descHtml}
             </div>
+            ${accionHtml}
             <div class="prod-cuerpo">
                 <div style="flex:1">${chips}</div>
                 ${urlMiniatura? `<img src="${urlMiniatura}" class="prod-foto-mini" alt="${p.nombre}" onclick="abrirImagen('${urlParaModal}', '${p.nombre}')">` : ''}
