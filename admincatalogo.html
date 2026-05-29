@@ -25,11 +25,17 @@
         #modalConfigSecreta { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px; border-radius: 15px; z-index: 1001; width: 85%; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
         .previa-url { width: 100%; height: 100px; object-fit: contain; background: #eee; border-radius: 8px; display: none; margin-top: 5px; }
+        
+        /* Estilos nuevos para los teléfonos */
+        .caja-telefonos { background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .item-tel { display: flex; justify-content: space-between; background: white; padding: 8px; border-radius: 5px; border: 1px solid #ddd; margin-bottom: 5px; font-size: 13px; }
+        .historial-item { flex-direction: column; gap: 5px; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1 onclick="detectarClicksSecretos()">⚙️ Mi Tienda Admin</h1>
+    
     <div class="seccion-admin" id="sec-config">
         <div class="seccion-header" onclick="toggleSeccion('sec-config')"><span>🎨 Cabecera</span><span>▼</span></div>
         <div class="seccion-body"><div class="grid-form">
@@ -39,6 +45,7 @@
             <button class="btn-principal" style="background:var(--verde)" onclick="guardarConfig()">💾 Guardar</button>
         </div></div>
     </div>
+    
     <div class="seccion-admin" id="sec-cat">
         <div class="seccion-header" onclick="toggleSeccion('sec-cat')"><span>📑 Pestañas</span><span>▼</span></div>
         <div class="seccion-body"><div class="grid-form">
@@ -47,38 +54,72 @@
             <div id="listaCategoriasAdmin"></div>
         </div></div>
     </div>
+    
     <div class="seccion-admin" id="sec-local">
-        <div class="seccion-header" onclick="toggleSeccion('sec-local')"><span>🏘️ Negocios</span><span>▼</span></div>
+        <div class="seccion-header" onclick="toggleSeccion('sec-local')"><span>🏘️ Negocios / Servicios</span><span>▼</span></div>
         <div class="seccion-body"><div class="grid-form">
-            <input type="hidden" id="idLocal"><select id="selCatLocal"></select>
-            <input type="text" id="nombreLocal" placeholder="Nombre Local"><input type="text" id="emojiLocal" placeholder="Emoji">
+            <input type="hidden" id="idLocal">
+            <select id="tipoLocal">
+                <option value="local">Tienda / Local (Productos)</option>
+                <option value="servicio">Servicios (Profesionales/Oficios)</option>
+            </select>
+            <select id="selCatLocal"></select>
+            <input type="text" id="nombreLocal" placeholder="Nombre Local o Servicio General">
+            <input type="text" id="emojiLocal" placeholder="Emoji">
             <button class="btn-principal" id="btnLocal" onclick="procesarLocal()">🏘️ Guardar</button>
             <div id="listaLocalesAdmin"></div>
         </div></div>
     </div>
+    
     <div class="seccion-admin" id="sec-prod">
-        <div class="seccion-header" onclick="toggleSeccion('sec-prod')"><span>🍔 Menú</span><span>▼</span></div>
+        <div class="seccion-header" onclick="toggleSeccion('sec-prod')"><span>🍔 Menú / Trabajos</span><span>▼</span></div>
         <div class="seccion-body"><div class="grid-form">
             <input type="hidden" id="idProd">
-            <select id="selLocalProd"></select>
-            <input type="text" id="nombreProd" placeholder="Producto">
-            <input type="text" id="precioProd" placeholder="Precio">
-            <input type="text" id="urlImagenProd" placeholder="Link de la imagen (URL)" oninput="verPrevia(this.value)">
-            <img id="imgPrevia" class="previa-url">
+            <select id="selLocalProd" onchange="cambiarFormulario()"></select>
+            
+            <input type="text" id="nombreProd" placeholder="Producto / Trabajo">
             <textarea id="descProd" placeholder="Descripción"></textarea>
-            <input type="text" id="variantesProd" placeholder="Variantes">
-            <button class="btn-principal" id="btnProd" onclick="procesarProducto()">🍔 Guardar Producto</button>
+
+            <div id="grupoProducto" style="display:grid; gap:10px;">
+                <input type="text" id="precioProd" placeholder="Precio">
+                <input type="text" id="urlImagenProd" placeholder="Link de la imagen (URL)" oninput="verPrevia(this.value)">
+                <img id="imgPrevia" class="previa-url">
+                <input type="text" id="variantesProd" placeholder="Variantes">
+            </div>
+
+            <div id="grupoServicio" class="caja-telefonos" style="display:none;">
+                <strong style="display:block; margin-bottom:8px; font-size: 13px;">👥 Personas que ofrecen el servicio:</strong>
+                
+                <div id="listaTelefonosUI"></div>
+                
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <input type="text" id="nuevoNomTel" placeholder="Nombre (Ej: Juan)" style="width: 50%;">
+                    <input type="text" id="nuevoNumTel" placeholder="Número (Ej: 88888888)" style="width: 50%;">
+                    <button class="btn-principal" style="width: auto; padding: 10px;" onclick="agregarTelefonoLocal()">➕</button>
+                </div>
+            </div>
+
+            <button class="btn-principal" id="btnProd" onclick="procesarProducto()">🍔 Guardar</button>
             <div id="listaProductosAdmin"></div>
         </div></div>
     </div>
+
+    <div class="seccion-admin" id="sec-hist">
+        <div class="seccion-header" onclick="toggleSeccion('sec-hist')"><span>📈 Historial Servicios</span><span>▼</span></div>
+        <div class="seccion-body"><div class="grid-form">
+            <p style="font-size: 12px; color: #666; margin:0;">Últimas personas contactadas desde el catálogo:</p>
+            <div id="listaHistorialAdmin"></div>
+        </div></div>
+    </div>
 </div>
+
 <a href="#" id="btnIrAPedidosAdmin" class="btn-salto-admin">📝 Pedidos</a>
 <div id="overlaySecreto" class="overlay" onclick="cerrarConfig()"></div>
 <div id="modalConfigSecreta">
     <h3>Nav Admin</h3><input type="text" id="nuevoLinkAdmin">
     <button class="btn-principal" style="background:var(--verde);margin-top:10px" onclick="guardarLinkAdmin()">💾 Actualizar</button>
 </div>
-<script>
+    <script>
     const config = { 
         apiKey: "AIzaSyAxWMSIqoS1ZXgAO3rOIiOMCrAaAZjDiao", 
         authDomain: "antojitos-pueblo-nuevo.firebaseapp.com", 
@@ -89,7 +130,12 @@
     };
     firebase.initializeApp(config);
     const db = firebase.firestore();
-    window.onload = () => { cargarConfig(); listarCategorias(); listarLocales(); listarProductos(); };
+    
+    let allLocales = []; 
+    let allProductos = []; // Guardaremos los productos globalmente para facilitar la edición
+    let telefonosActuales = []; // Array para guardar la lista de teléfonos del servicio actual
+
+    window.onload = () => { cargarConfig(); listarCategorias(); listarLocales(); listarProductos(); listarHistorial(); };
     function verPrevia(url) { const img=document.getElementById('imgPrevia'); if(url){img.src=url;img.style.display='block';}else{img.style.display='none';} }
     let clicks = 0; function detectarClicksSecretos(){ clicks++; if(clicks==5){document.getElementById('modalConfigSecreta').style.display='block';document.getElementById('overlaySecreto').style.display='block';} setTimeout(()=>clicks=0,2000); }
     function cerrarConfig(){ document.getElementById('modalConfigSecreta').style.display='none';document.getElementById('overlaySecreto').style.display='none';}
@@ -97,19 +143,200 @@
     function cargarConfig() { db.collection("configuracion").doc("catalogo").onSnapshot(doc=>{ if(doc.exists){ const d=doc.data(); document.getElementById('mensajeCabecera').value=d.mensajeCabecera||"";document.getElementById('textoSugerencia').value=d.textoSugerencia||"";document.getElementById('linkPedido').value=d.linkPedido||""; document.getElementById('btnIrAPedidosAdmin').href=d.linkAdminPedidos||"#"; document.getElementById('nuevoLinkAdmin').value=d.linkAdminPedidos||"";}}); }
     function toggleSeccion(id){ const e=document.getElementById(id); const a=e.classList.contains('abierta'); document.querySelectorAll('.seccion-admin').forEach(s=>s.classList.remove('abierta')); if(!a) e.classList.add('abierta'); }
     async function guardarConfig(){ await db.collection("configuracion").doc("catalogo").set({mensajeCabecera:document.getElementById('mensajeCabecera').value,textoSugerencia:document.getElementById('textoSugerencia').value,linkPedido:document.getElementById('linkPedido').value},{merge:true}); alert("Guardado"); }
+    
     async function procesarCategoria(){ const i=document.getElementById('idCat').value, n=document.getElementById('nombreCat').value; if(!n) return; i?await db.collection("categorias").doc(i).update({nombre:n}):await db.collection("categorias").add({nombre:n}); limpiarCat(); }
     function listarCategorias(){ db.collection("categorias").orderBy("nombre").onSnapshot(s=>{ const l=document.getElementById('listaCategoriasAdmin'), sel=document.getElementById('selCatLocal'); l.innerHTML=""; sel.innerHTML=""; s.forEach(d=>{ const c=d.data(); sel.innerHTML+=`<option value="${d.id}">${c.nombre}</option>`; l.innerHTML+=`<div class="item-admin"><span>${c.nombre}</span><div><button class="btn-mini" onclick="editarCat('${d.id}','${c.nombre}')">✏️</button><button class="btn-mini" onclick="eliminar('categorias','${d.id}')">🗑️</button></div></div>`;});}); }
-    async function procesarLocal(){ const i=document.getElementById('idLocal').value, d={nombre:document.getElementById('nombreLocal').value,emoji:document.getElementById('emojiLocal').value,categoriaId:document.getElementById('selCatLocal').value}; if(!d.nombre) return; i?await db.collection("locales").doc(i).update(d):await db.collection("locales").add(d); limpiarLocal(); }
-    function listarLocales(){ db.collection("locales").onSnapshot(s=>{ const l=document.getElementById('listaLocalesAdmin'), sel=document.getElementById('selLocalProd'); l.innerHTML=""; sel.innerHTML=""; s.forEach(d=>{ const o=d.data(); sel.innerHTML+=`<option value="${d.id}">${o.nombre}</option>`; l.innerHTML+=`<div class="item-admin"><span>${o.emoji}${o.nombre}</span><div><button class="btn-mini" onclick="editarLocal('${d.id}','${o.nombre}','${o.emoji}','${o.categoriaId}')">✏️</button><button class="btn-mini" onclick="eliminar('locales','${d.id}')">🗑️</button></div></div>`;});}); }
-    async function procesarProducto(){ const i=document.getElementById('idProd').value, b=document.getElementById('btnProd'), u=document.getElementById('urlImagenProd').value; if(!document.getElementById('nombreProd').value) return alert("Nombre!"); b.disabled=true; try{ const data={localId:document.getElementById('selLocalProd').value,nombre:document.getElementById('nombreProd').value,precio:document.getElementById('precioProd').value,descripcion:document.getElementById('descProd').value,variantes:document.getElementById('variantesProd').value,urlImagen:u||""}; i?await db.collection("productos").doc(i).update(data):await db.collection("productos").add(data); limpiarProd(); alert("Listo"); }catch(e){alert(e.message);}finally{b.disabled=false;} }
-    function listarProductos(){ db.collection("productos").onSnapshot(s=>{ const l=document.getElementById('listaProductosAdmin'); l.innerHTML=""; s.forEach(d=>{ const p=d.data(); l.innerHTML+=`<div class="item-admin"><span>${p.urlImagen?'🖼️':''} ${p.nombre}</span><div><button class="btn-mini" onclick="editarProd('${d.id}',\`${p.nombre}\`,'${p.precio}',\`${p.descripcion||''}\`,'${p.localId}','${p.variantes||''}','${p.urlImagen||''}')">✏️</button><button class="btn-mini" onclick="eliminar('productos','${d.id}')">🗑️</button></div></div>`;});}); }
+    
+    async function procesarLocal(){ 
+        const i=document.getElementById('idLocal').value;
+        const d={
+            nombre:document.getElementById('nombreLocal').value,
+            emoji:document.getElementById('emojiLocal').value,
+            categoriaId:document.getElementById('selCatLocal').value,
+            tipo:document.getElementById('tipoLocal').value
+        }; 
+        if(!d.nombre) return; 
+        i?await db.collection("locales").doc(i).update(d):await db.collection("locales").add(d); 
+        limpiarLocal(); 
+    }
+    
+    function listarLocales(){ 
+        db.collection("locales").onSnapshot(s=>{ 
+            const l=document.getElementById('listaLocalesAdmin'), sel=document.getElementById('selLocalProd'); 
+            l.innerHTML=""; sel.innerHTML=""; 
+            allLocales = []; 
+            s.forEach(d=>{ 
+                const o=d.data(); 
+                allLocales.push({id: d.id, ...o}); 
+                sel.innerHTML+=`<option value="${d.id}">${o.nombre}</option>`; 
+                l.innerHTML+=`<div class="item-admin"><span>${o.emoji}${o.nombre}</span><div><button class="btn-mini" onclick="editarLocal('${d.id}','${o.nombre}','${o.emoji}','${o.categoriaId}','${o.tipo||'local'}')">✏️</button><button class="btn-mini" onclick="eliminar('locales','${d.id}')">🗑️</button></div></div>`;
+            });
+            cambiarFormulario(); 
+        }); 
+    }
+
+    // --- NUEVAS FUNCIONES PARA TELEFONOS MÚLTIPLES ---
+    function agregarTelefonoLocal() {
+        const nom = document.getElementById('nuevoNomTel').value;
+        const num = document.getElementById('nuevoNumTel').value;
+        if(nom && num) {
+            telefonosActuales.push({ nombre: nom, telefono: num });
+            document.getElementById('nuevoNomTel').value = "";
+            document.getElementById('nuevoNumTel').value = "";
+            renderTelefonosUI();
+        }
+    }
+    function eliminarTelefonoLocal(index) {
+        telefonosActuales.splice(index, 1);
+        renderTelefonosUI();
+    }
+    function renderTelefonosUI() {
+        const div = document.getElementById('listaTelefonosUI');
+        div.innerHTML = "";
+        telefonosActuales.forEach((t, i) => {
+            div.innerHTML += `
+            <div class="item-tel">
+                <span>👤 <b>${t.nombre}</b> - 📞 ${t.telefono}</span>
+                <button type="button" class="btn-mini" style="background:#e74c3c;color:white;" onclick="eliminarTelefonoLocal(${i})">X</button>
+            </div>`;
+        });
+    }
+
+    function cambiarFormulario() {
+        const localId = document.getElementById('selLocalProd').value;
+        const localRef = allLocales.find(l => l.id === localId);
+        const esServicio = localRef && localRef.tipo === 'servicio';
+
+        document.getElementById('grupoProducto').style.display = esServicio ? 'none' : 'grid';
+        document.getElementById('grupoServicio').style.display = esServicio ? 'block' : 'none';
+        
+        document.getElementById('btnProd').innerHTML = esServicio ? '🛠️ Guardar Trabajo' : '🍔 Guardar Producto';
+        document.getElementById('nombreProd').placeholder = esServicio ? 'Nombre del Trabajo/Oficio' : 'Nombre del Producto';
+    }
+
+    async function procesarProducto(){ 
+        const i=document.getElementById('idProd').value, b=document.getElementById('btnProd'); 
+        if(!document.getElementById('nombreProd').value) return alert("Falta el nombre!"); 
+        b.disabled=true; 
+        try{ 
+            const localId = document.getElementById('selLocalProd').value;
+            const localRef = allLocales.find(l => l.id === localId);
+            const esServicio = localRef && localRef.tipo === 'servicio';
+
+            const data={
+                localId: localId,
+                nombre: document.getElementById('nombreProd').value,
+                descripcion: document.getElementById('descProd').value,
+                tipoItem: esServicio ? 'servicio' : 'producto'
+            };
+
+            if(esServicio) {
+                // Guarda el array de objetos directamente en firebase
+                data.telefonos = telefonosActuales;
+                data.precio = ""; data.variantes = ""; data.urlImagen = ""; 
+            } else {
+                data.precio = document.getElementById('precioProd').value;
+                data.urlImagen = document.getElementById('urlImagenProd').value || "";
+                data.variantes = document.getElementById('variantesProd').value;
+                data.telefonos = []; 
+            }
+
+            i?await db.collection("productos").doc(i).update(data):await db.collection("productos").add(data); 
+            limpiarProd(); alert("Listo"); 
+        }catch(e){alert(e.message);}finally{b.disabled=false;} 
+    }
+
+    function listarProductos(){ 
+        db.collection("productos").onSnapshot(s=>{ 
+            const l=document.getElementById('listaProductosAdmin'); l.innerHTML=""; 
+            allProductos = []; // Guardamos los productos en el array global
+            s.forEach(d=>{ 
+                const p=d.data(); 
+                allProductos.push({id: d.id, ...p});
+                const icono = p.tipoItem === 'servicio' ? '🛠️' : (p.urlImagen ? '🖼️' : '🍔');
+                // Ahora solo pasamos el ID para editar, evita errores con arrays largos
+                l.innerHTML+=`<div class="item-admin"><span>${icono} ${p.nombre}</span><div><button class="btn-mini" onclick="editarProd('${d.id}')">✏️</button><button class="btn-mini" onclick="eliminar('productos','${d.id}')">🗑️</button></div></div>`;
+            });
+        }); 
+    }
+
+    // --- NUEVA FUNCIÓN HISTORIAL ---
+    function listarHistorial() {
+        // Lee la colección "historial_servicios" ordenada por fecha
+        db.collection("historial_servicios").orderBy("fecha", "desc").limit(30).onSnapshot(s => {
+            const l = document.getElementById('listaHistorialAdmin');
+            l.innerHTML = "";
+            s.forEach(d => {
+                const h = d.data();
+                // Formatear la fecha
+                const fechaStr = h.fecha ? h.fecha.toDate().toLocaleString('es-NI') : 'Fecha desconocida';
+                l.innerHTML += `
+                <div class="item-admin historial-item">
+                    <div style="display:flex; justify-content:space-between; width:100%;">
+                        <strong>${h.nombreServicio || 'Servicio'}</strong>
+                        <span style="font-size:10px; color:#888;">${fechaStr}</span>
+                    </div>
+                    <div style="font-size:12px; color:#444;">
+                        Redirigido a: <b>👤 ${h.trabajadorNombre}</b> (📞 ${h.trabajadorTelefono})
+                    </div>
+                </div>`;
+            });
+        });
+    }
+
     function eliminar(c,i){ if(confirm("Borrar?")) db.collection(c).doc(i).delete(); }
     function editarCat(i,n){ document.getElementById('idCat').value=i; document.getElementById('nombreCat').value=n; }
-    function editarLocal(i,n,e,c){ document.getElementById('idLocal').value=i; document.getElementById('nombreLocal').value=n; document.getElementById('emojiLocal').value=e; document.getElementById('selCatLocal').value=c; }
-    function editarProd(i,n,p,d,l,v,u){ document.getElementById('idProd').value=i; document.getElementById('nombreProd').value=n; document.getElementById('precioProd').value=p; document.getElementById('descProd').value=d; document.getElementById('selLocalProd').value=l; document.getElementById('variantesProd').value=v; document.getElementById('urlImagenProd').value=u; verPrevia(u); }
+    
+    function editarLocal(i,n,e,c,t){ 
+        document.getElementById('idLocal').value=i; 
+        document.getElementById('nombreLocal').value=n; 
+        document.getElementById('emojiLocal').value=e; 
+        document.getElementById('selCatLocal').value=c; 
+        document.getElementById('tipoLocal').value=t||'local';
+    }
+    
+    function editarProd(id){ 
+        // Buscamos el producto en el array global
+        const p = allProductos.find(prod => prod.id === id);
+        if(!p) return;
+
+        document.getElementById('idProd').value = p.id; 
+        document.getElementById('nombreProd').value = p.nombre; 
+        document.getElementById('descProd').value = p.descripcion || ""; 
+        document.getElementById('selLocalProd').value = p.localId; 
+
+        if(p.tipoItem === 'servicio') {
+            // Aseguramos que sea un array
+            telefonosActuales = Array.isArray(p.telefonos) ? p.telefonos : [];
+            renderTelefonosUI();
+        } else {
+            document.getElementById('precioProd').value = p.precio || ""; 
+            document.getElementById('variantesProd').value = p.variantes || ""; 
+            document.getElementById('urlImagenProd').value = p.urlImagen || ""; 
+            verPrevia(p.urlImagen); 
+            telefonosActuales = [];
+        }
+        
+        cambiarFormulario(); 
+    }
+    
     function limpiarCat(){ document.getElementById('idCat').value=""; document.getElementById('nombreCat').value=""; }
-    function limpiarLocal(){ document.getElementById('idLocal').value=""; document.getElementById('nombreLocal').value=""; document.getElementById('emojiLocal').value=""; }
-    function limpiarProd(){ document.getElementById('idProd').value=""; document.getElementById('nombreProd').value=""; document.getElementById('precioProd').value=""; document.getElementById('descProd').value=""; document.getElementById('variantesProd').value=""; document.getElementById('urlImagenProd').value=""; verPrevia(""); }
+    function limpiarLocal(){ document.getElementById('idLocal').value=""; document.getElementById('nombreLocal').value=""; document.getElementById('emojiLocal').value=""; document.getElementById('tipoLocal').value="local"; }
+    function limpiarProd(){ 
+        document.getElementById('idProd').value=""; 
+        document.getElementById('nombreProd').value=""; 
+        document.getElementById('precioProd').value=""; 
+        document.getElementById('descProd').value=""; 
+        document.getElementById('variantesProd').value=""; 
+        document.getElementById('urlImagenProd').value=""; 
+        
+        telefonosActuales = []; // Limpiamos el array
+        renderTelefonosUI();
+
+        verPrevia(""); 
+        cambiarFormulario();
+    }
 </script>
 </body>
 </html>
+    
